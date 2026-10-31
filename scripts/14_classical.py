@@ -1,4 +1,5 @@
 import json, csv, os, cv2, numpy as np
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
 ROOT, MASKS, LOG, S = "data/egg_v1i_folder", "outputs/sam_final/masks", "experiment_log.csv", 320
 OUT = "outputs/results"; os.makedirs(OUT, exist_ok=True)
@@ -331,14 +332,40 @@ for tid, fn, change, why, params in TRIALS:
     if keep:
         best, best_iou = (tid, fn), m
 
+def boundary_f1(p, g, tol=2):
+    p = p.astype(bool); g = g.astype(bool)
+    if not p.any() and not g.any(): return 1.0
+    if not p.any() or not g.any(): return 0.0
+    k3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    bp = (p.astype(np.uint8) - cv2.erode(p.astype(np.uint8), k3)) > 0
+    bg = (g.astype(np.uint8) - cv2.erode(g.astype(np.uint8), k3)) > 0
+    dp = cv2.distanceTransform((~bp).astype(np.uint8), cv2.DIST_L2, 3)
+    dg = cv2.distanceTransform((~bg).astype(np.uint8), cv2.DIST_L2, 3)
+    prec = (bp & (dg <= tol)).sum() / max(1, bp.sum())
+    rec = (bg & (dp <= tol)).sum() / max(1, bg.sum())
+    return (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
+
 tid, fn = best
 print("FINAL METHOD:", tid)
+r_dev, r_eval = None, None
 for name, files in (("dev", split["dev"]), ("eval", split["eval"])):
-    r = run(fn, files); a = np.array([x[1:] for x in r])
-    csv.writer(open(f"{OUT}/{name}_scores.csv", "w", newline="")).writerows([("image", "iou", "dice", "precision", "recall")] + r)
-    print(f"{name.upper()} n={len(r)} IoU mean={a[:,0].mean():.3f} median={np.median(a[:,0]):.3f} Dice={a[:,1].mean():.3f} P={a[:,2].mean():.3f} R={a[:,3].mean():.3f}")
-    if name == "eval":
-        r_eval = r
+    res = []
+    for rel in files:
+        d = load(rel)
+        if d is None:
+            print("missing", rel); continue
+        img, gt = d
+        p = fn(img)
+        m = metrics(p, gt)
+        bf = boundary_f1(p, gt, tol=2)
+        res.append((rel, *m, bf))
+    a = np.array([x[1:] for x in res])
+    csv.writer(open(f"{OUT}/{name}_scores.csv", "w", newline="")).writerows([("image", "iou", "dice", "precision", "recall", "boundary_f1")] + res)
+    print(f"{name.upper()} n={len(res)} IoU mean={a[:,0].mean():.3f} median={np.median(a[:,0]):.3f} Dice={a[:,1].mean():.3f} P={a[:,2].mean():.3f} R={a[:,3].mean():.3f} BoundF1={a[:,4].mean():.3f}")
+    if name == "dev":
+        r_dev = res
+    else:
+        r_eval = res
 
 worst = sorted(r_eval, key=lambda x: x[1])[:6]; rows = []
 for rel, *_ in worst:
@@ -354,6 +381,49 @@ try:
     import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
     v = [x[1] for x in r_eval]; plt.hist(v, bins=10, range=(0, 1)); plt.xlabel("IoU (eval)"); plt.ylabel("images")
     plt.savefig(f"{OUT}/iou_hist.png", dpi=120)
+    plt.close()
+
+    scenes = {
+        "ash": [27,36,41,50,78], "pan": [113,114,128,129,147,135,124,145],
+        "keyboard": [17,18,19,43], "cloth": [4,5,6,62,52,55],
+        "bag": [104,106,109,111,112,123,125], "tub": [108,127,130,139,141],
+        "leaves": [10,11,12,13],
+        "hand": [29, 100, 101, 102, 105, 115, 120, 121, 132, 133, 134, 140, 144, 148, 151, 136]
+    }
+    id_to_scene = {num: sc for sc, nums in scenes.items() for num in nums}
+    scene_order = ["ash", "pan", "keyboard", "cloth", "bag", "tub", "leaves", "hand", "other"]
+
+    dev_by_sc = {s: [] for s in scene_order}
+    eval_by_sc = {s: [] for s in scene_order}
+    for rel, iou, *_ in r_dev:
+        n = int(os.path.basename(rel).split("_")[2])
+        dev_by_sc[id_to_scene.get(n, "other")].append(iou)
+    for rel, iou, *_ in r_eval:
+        n = int(os.path.basename(rel).split("_")[2])
+        eval_by_sc[id_to_scene.get(n, "other")].append(iou)
+
+    dev_means = [float(np.mean(dev_by_sc[s])) if len(dev_by_sc[s]) > 0 else 0.0 for s in scene_order]
+    eval_means = [float(np.mean(eval_by_sc[s])) if len(eval_by_sc[s]) > 0 else 0.0 for s in scene_order]
+
+    x = np.arange(len(scene_order)); width = 0.35
+    fig, ax = plt.subplots(figsize=(10, 5))
+    rects1 = ax.bar(x - width/2, dev_means, width, label="Dev", color="#3274A1", edgecolor="black")
+    rects2 = ax.bar(x + width/2, eval_means, width, label="Eval", color="#E1812C", edgecolor="black")
+    ax.set_ylabel("Mean IoU")
+    ax.set_title("Mean IoU by Scene Group (Dev vs Eval)")
+    ax.set_xticks(x)
+    ax.set_xticklabels(scene_order)
+    ax.set_ylim(0, 1.0)
+    ax.legend()
+    ax.grid(axis="y", linestyle="--", alpha=0.5)
+    for rect in list(rects1) + list(rects2):
+        h = rect.get_height()
+        if h > 0:
+            ax.annotate(f"{h:.2f}", xy=(rect.get_x() + rect.get_width() / 2, h),
+                        xytext=(0, 3), textcoords="offset points", ha="center", va="bottom", fontsize=8)
+    plt.tight_layout()
+    plt.savefig(f"{OUT}/scene_iou.png", dpi=120)
+    plt.close()
 except ImportError:
     print("matplotlib missing: pip install matplotlib")
 print("saved to", OUT)
