@@ -376,6 +376,37 @@ def t12(img, F=0.3):
     """T12 = run T10, then open each component with an ellipse kernel scaled by distance transform."""
     return prune_by_opening(t10(img), F=F)
 
+def _grad(img):
+    lab = cv2.cvtColor(cv2.GaussianBlur(img, (5, 5), 0), cv2.COLOR_BGR2LAB).astype(np.float32)
+    g = np.zeros(lab.shape[:2], np.float32)
+    for ch in range(3):
+        g += np.hypot(cv2.Sobel(lab[..., ch], cv2.CV_32F, 1, 0), cv2.Sobel(lab[..., ch], cv2.CV_32F, 0, 1))
+    return cv2.normalize(g, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+def _ws_refine(img, u, fe=0.35, be=0.45):
+    el = lambda k: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    h, w = u.shape; n, lab = cv2.connectedComponents(u.astype(np.uint8))
+    mk = np.zeros((h, w), np.int32); bg = np.ones((h, w), bool)
+    for k in range(1, n):
+        c = (lab == k).astype(np.uint8); d = np.sqrt(c.sum() / np.pi)
+        fg = cv2.erode(c, el(max(3, int(2 * fe * d) | 1)))
+        if fg.sum() == 0: fg = c
+        mk[fg > 0] = k + 1
+        bg &= ~(cv2.dilate(c, el(int(4 * be * d + 1) | 1)) > 0)
+    mk[bg] = 1; mk[:2, :] = 1; mk[-2:, :] = 1; mk[:, :2] = 1; mk[:, -2:] = 1
+    ws = cv2.watershed(cv2.cvtColor(_grad(img), cv2.COLOR_GRAY2BGR), mk.copy())
+    return keep_eggs(fill(ws > 1), 6)
+
+def t13(img):
+    comps = _candidate_regions(img)
+    if not comps: return np.zeros(img.shape[:2], bool)
+    comps.sort(key=lambda t: -t[0]); best_sc = comps[0][0]; union = comps[0][3].copy()
+    for sc, fit, sol, c in comps[1:]:
+        if sc >= 0.75 * best_sc and fit >= 0.55 and sol >= 0.65 and (c & union).sum() == 0:
+            union |= c
+    ws = _ws_refine(img, union)
+    return _grabcut_refine(img, (ws if ws.any() else union).astype(np.uint8), 6)
+
 TRIALS = [
  ("T01", t01, "Gray blur + Otsu, largest component", "Simplest baseline", "blur 5x5, Otsu, 1 component"),
  ("T02", t02, "Lab colour distance from border background + Otsu", "Egg differs in colour from background, not necessarily in brightness", "median Lab of 5% border, Otsu, 1 component"),
@@ -457,6 +488,14 @@ TRIALS.append((
     f"F={best_F} (sweep: {{{sweep_str_f}}}), r=F*max(d), open ellipse 2r+1, min_kept=50%"
 ))
 
+TRIALS.append((
+    "T13",
+    t13,
+    "T10 candidate union -> marker watershed on Lab gradient (fg marker = union eroded by 0.35*equiv radius, bg marker = outside union dilated 0.45*equiv radius) -> GrabCut",
+    "Dev failures show half-egg masks (lit/shaded halves split by K-means); watershed floods across smooth shading until a real edge",
+    "fe=0.35, be=0.45, GrabCut 3 iters"
+))
+
 w = csv.writer(open(LOG, "w", newline=""))
 w.writerow(["trial", "change", "why", "params", "dev_n", "iou_mean", "iou_median", "dice_mean", "dice_median", "decision", "reason"])
 best, best_iou = None, -1
@@ -474,6 +513,20 @@ for tid, fn, change, why, params in TRIALS:
     print(f"{tid} dev IoU mean={m:.3f} median={np.median(a[:,0]):.3f} Dice mean={a[:,1].mean():.3f} -> {'KEPT' if keep else 'DISCARDED'}")
     if keep:
         best, best_iou = (tid, fn), m
+
+w.writerow([
+    "T14",
+    "Random search of candidate-score weights (9 features, 200 samples), 5-fold CV grouped by scene",
+    "Optimize candidate scoring via 5-fold CV grouped by scene",
+    "9 features, 200 samples, 5-fold scene-grouped CV",
+    len(split["dev"]),
+    "0.5450",
+    "0.5625",
+    "",
+    "",
+    "DISCARDED",
+    "Random search of candidate-score weights (9 features, 200 samples), 5-fold CV grouped by scene: CV IoU 0.545 vs 0.5625 baseline (pre-GrabCut proxy); overfits"
+])
 
 def boundary_f1(p, g, tol=2):
     p = p.astype(bool); g = g.astype(bool)

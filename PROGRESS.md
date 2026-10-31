@@ -6,3 +6,4 @@
 - [x] STEP 4: README.md, report/report.md, requirements.txt refreshed and committed
 - [x] STEP 5: T11 debugged – verified K=1000 sanity check matches T10 (diff 0.0001 < 0.01); sweep {1.5..1000} logged to experiment_log.csv
 - [x] STEP 6: T12 added (distance-transform opening) – F sweep {0.3..0.9, F=0 control} evaluated on DEV; T11 log text updated
+- [x] STEP 7: T13 added (marker-controlled watershed on Lab gradient) – KEPT (Dev IoU 0.681); T14 logged
