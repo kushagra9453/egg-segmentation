@@ -7,3 +7,4 @@ outputs/sam/
 outputs/sam_final/masks_before_manual/
 outputs/sam_final/masks_cvat_backup/
 outputs/sam_final/masks_ellipse_backup/
+yt-dlp
