@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<annotations>
+  <version>1.1</version>
+  <meta>
+    <job>
+      <id>13</id>
+      <size>110</size>
+      <mode>annotation</mode>
+      <overlap>0</overlap>
+      <bugtracker></bugtracker>
+      <created>2026-10-29 10:19:34.122843+00:00</created>
+      <updated>2026-10-31 08:13:17.950336+00:00</updated>
+      <subset>default</subset>
+      <start_frame>0</start_frame>
+      <stop_frame>109</stop_frame>
+      <frame_filter></frame_filter>
+      <segments>
+        <segment>
+          <id>13</id>
+          <start>0</start>
+          <stop>109</stop>
+          <url>http://localhost:8080/api/jobs/13/dataset/export/api/jobs/13</url>
+        </segment>
+      </segments>
+      <owner>
+        <username>kushagrasingh4843@gmail.com</username>
+        <email>kushagrasingh4843@gmail.com</email>
+      </owner>
+      <assignee></assignee>
+      <labels>
+        <label>
+          <name>egg</name>
+          <color>#3df53d</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+      </labels>
+    </job>
+    <dumped>2026-10-31 08:18:47.948931+00:00</dumped>
+  </meta>
+  <image id="10" name="test/egg/not_damaged_78_jpg.rf.d3a6e8624d192abc58ff7df9d5781bb5.jpg" width="640" height="640">
+  </image>
+  <image id="11" name="train/Unlabeled/not_damaged_135_jpg.rf.a6d81ffb82470e031fb3ab469c8f0db2.jpg" width="640" height="640">
+  </image>
+  <image id="12" name="train/Unlabeled/not_damaged_145_jpg.rf.5147bfde42f30a27504377fd5ef13b05.jpg" width="640" height="640">
+  </image>
+  <image id="13" name="train/egg/not_damaged_100_jpg.rf.5d780a6024004fa2f68741fa56ddf4c9.jpg" width="640" height="640">
+  </image>
+  <image id="14" name="train/egg/not_damaged_103_jpg.rf.c0bd961caec5acf3a6582c9cb2551634.jpg" width="640" height="640">
+  </image>
+  <image id="15" name="train/egg/not_damaged_104_jpg.rf.3bf8cb51d5ad8934390c8e2c3b79b32f.jpg" width="640" height="640">
+  </image>
+  <image id="16" name="train/egg/not_damaged_105_jpg.rf.6b94b57d4e4cb521abbec55bb95c2a76.jpg" width="640" height="640">
+  </image>
+  <image id="17" name="train/egg/not_damaged_106_jpg.rf.4ab043b322cc9e55bdf788a4d69ae74b.jpg" width="640" height="640">
+  </image>
+  <image id="18" name="train/egg/not_damaged_108_jpg.rf.de0bd2447ade8d891625ac0dd055667a.jpg" width="640" height="640">
+  </image>
+  <image id="19" name="train/egg/not_damaged_10_jpg.rf.2347ffa54eea250ab240def10a3eb78f.jpg" width="640" height="640">
+    <polygon label="egg" source="manual" occluded="0" points="130.73,388.71;191.57,304.95;272.16,273.35;338.53,271.77;400.16,301.00;418.34,334.98;402.53,376.06;366.19,416.36;280.85,465.35;191.57,473.25;136.26,436.11" z_order="0">
+    </polygon>
+  </image>
+  <image id="20" name="train/egg/not_damaged_110_jpg.rf.2de10ae949146248df94e52f9065bdd8.jpg" width="640" height="640">
+  </image>
+  <image id="21" name="train/egg/not_damaged_111_jpg.rf.d56bdd5f452dfc3935b4d6962ed33309.jpg" width="640" height="640">
+  </image>
+  <image id="22" name="train/egg/not_damaged_112_jpg.rf.2ecb081cd9d32a7ff8c9f4db24e911b9.jpg" width="640" height="640">
+  </image>
+  <image id="23" name="train/egg/not_damaged_113_jpg.rf.75e3389c0809c7c0f42fbfd25219e65e.jpg" width="640" height="640">
+  </image>
+  <image id="24" name="train/egg/not_damaged_114_jpg.rf.7ccf87a5610bafd963468463b2e2907c.jpg" width="640" height="640">
+  </image>
+  <image id="25" name="train/egg/not_damaged_116_jpg.rf.43fecd96347e2129115fceed65986cc9.jpg" width="640" height="640">
+  </image>
+  <image id="26" name="train/egg/not_damaged_117_jpg.rf.d25ded9e7408f9b89b3cfb3de581f6a6.jpg" width="640" height="640">
+  </image>
+  <image id="27" name="train/egg/not_damaged_118_jpg.rf.3e17ba84bcb3b57ebbf743b145c5ae27.jpg" width="640" height="640">
+  </image>
+  <image id="28" name="train/egg/not_damaged_121_jpg.rf.0506fe180f5fed88ae65348130fb5192.jpg" width="640" height="640">
+  </image>
+  <image id="29" name="train/egg/not_damaged_123_jpg.rf.11d40a86277d3ab3fce1c5c6cbf14db0.jpg" width="640" height="640">
+  </image>
+  <image id="30" name="train/egg/not_damaged_124_jpg.rf.931f62b8d40a093039633b898e0e9114.jpg" width="640" height="640">
+  </image>
+  <image id="31" name="train/egg/not_damaged_127_jpg.rf.3a541bab7c9e2c2e43c2fdbf391617b5.jpg" width="640" height="640">
+  </image>
+  <image id="32" name="train/egg/not_damaged_128_jpg.rf.95a7ef96dcc9e14fa7137708df6f2e60.jpg" width="640" height="640">
+  </image>
+  <image id="33" name="train/egg/not_damaged_129_jpg.rf.3cee5e92daed138fcdc13d9aa62c2785.jpg" width="640" height="640">
+  </image>
+  <image id="34" name="train/egg/not_damaged_12_jpg.rf.339e366cebec5c32e751e8500aa12f3e.jpg" width="640" height="640">
+  </image>
+  <image id="35" name="train/egg/not_damaged_131_jpg.rf.4ac62f5b18b131bac463f705d0969147.jpg" width="640" height="640">
+  </image>
+  <image id="36" name="train/egg/not_damaged_132_jpg.rf.5deff743ad11d33750171617e116bd7a.jpg" width="640" height="640">
+  </image>
+  <image id="37" name="train/egg/not_damaged_134_jpg.rf.fb4e9c442527db9e71d4a95584773fa2.jpg" width="640" height="640">
+    <polygon label="egg" source="manual" occluded="0" points="1.15,412.41;58.04,368.95;178.14,342.09;251.62,355.52;294.29,391.08;298.24,440.06;259.52,479.57;201.05,503.27;95.97,503.27;21.69,474.83;1.15,444.01" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="351.97,195.92;354.34,150.88;385.15,111.37;430.19,88.46;476.01,94.78;516.31,118.48;531.32,169.84;500.51,224.36;457.05,253.60;403.32,258.34;362.24,227.52" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="431.00,320.00;479.18,275.72;551.08,265.45;592.95,285.99;608.76,331.03;585.05,372.11;529.74,400.56;463.37,395.03;431.77,364.21" z_order="0">
+    </polygon>
+  </image>
+  <image id="38" name="train/egg/not_damaged_138_jpg.rf.4db6e0e16ddec73ff527d4efbb119f7a.jpg" width="640" height="640">
+  </image>
+  <image id="39" name="train/egg/not_damaged_139_jpg.rf.9f18c65b30035092401a5281a03b7124.jpg" width="640" height="640">
+  </image>
+  <image id="40" name="train/egg/not_damaged_13_jpg.rf.60964651b01aed5680a994ecbd7012ea.jpg" width="640" height="640">
+  </image>
+  <image id="41" name="train/egg/not_damaged_141_jpg.rf.67be7a06282cf025b53162b5a9df15ff.jpg" width="640" height="640">
+  </image>
+  <image id="42" name="train/egg/not_damaged_142_jpg.rf.5b29be6bd5a6cfc192f51a5b580c1a07.jpg" width="640" height="640">
+  </image>
+  <image id="43" name="train/egg/not_damaged_144_jpg.rf.a9435fb1769a2350dbdd400bcc46a4eb.jpg" width="640" height="640">
+    <polygon label="egg" source="manual" occluded="0" points="31.18,299.42;36.71,229.10;102.29,147.72;143.37,123.22;202.63,111.37;257.15,106.63;295.87,131.92;333.00,169.05;353.55,221.20;345.64,286.78;306.93,349.20;238.98,391.87;156.80,395.03;93.60,381.60;55.67,348.41" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="139.42,120.85;166.29,54.48;226.34,9.45;252.31,0.00;253.44,0.00;322.73,2.34;366.19,26.83;397.79,64.76;403.32,118.48;343.27,175.37" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="391.47,129.55;453.89,100.31;525.00,95.57;585.84,110.58;626.93,146.93;635.62,192.76;614.29,242.53;549.50,290.73;491.03,312.06;419.13,312.85;365.40,298.63;342.48,281.25;339.32,177.74" z_order="0">
+    </polygon>
+  </image>
+  <image id="44" name="train/egg/not_damaged_146_jpg.rf.a7df655e36c3a2faab1c3f248081504d.jpg" width="640" height="640">
+  </image>
+  <image id="45" name="train/egg/not_damaged_148_jpg.rf.8a3e1c0e1dae236abe0e9a75a4882bda.jpg" width="640" height="640">
+  </image>
+  <image id="46" name="train/egg/not_damaged_151_jpg.rf.34a8c4ae80d0863cd228120235134ae2.jpg" width="640" height="640">
+  </image>
+  <image id="47" name="train/egg/not_damaged_154_jpg.rf.1ad087e824bbaae4f2c8218624f83c1a.jpg" width="640" height="640">
+  </image>
+  <image id="48" name="train/egg/not_damaged_155_jpg.rf.a65395f65d93bcd6cbf6bdab6d94e551.jpg" width="640" height="640">
+  </image>
+  <image id="49" name="train/egg/not_damaged_156_jpg.rf.6ae4742599d61d6120e5beb5d38bcf2e.jpg" width="640" height="640">
+  </image>
+  <image id="50" name="train/egg/not_damaged_157_jpg.rf.b244a82199f2158510ccf485e54d98a2.jpg" width="640" height="640">
+  </image>
+  <image id="51" name="train/egg/not_damaged_159_jpg.rf.2bc51aa920c0031f8e311c52c762cded.jpg" width="640" height="640">
+  </image>
+  <image id="52" name="train/egg/not_damaged_15_jpg.rf.c7c6c90e16bcccd97696ed56f741d670.jpg" width="640" height="640">
+  </image>
+  <image id="53" name="train/egg/not_damaged_160_jpg.rf.64b7834918be5b72840ecee1e390157e.jpg" width="640" height="640">
+  </image>
+  <image id="54" name="train/egg/not_damaged_162_jpg.rf.4255a3c6bb6b0a9a625d70a5b51a7df9.jpg" width="640" height="640">
+  </image>
+  <image id="55" name="train/egg/not_damaged_163_jpg.rf.eee95b2e3a2af8b228d81075f9b2f24d.jpg" width="640" height="640">
+  </image>
+  <image id="56" name="train/egg/not_damaged_164_jpg.rf.aeab74f44b77d69cb4884f8a55d4a5b8.jpg" width="640" height="640">
+  </image>
+  <image id="57" name="train/egg/not_damaged_16_jpg.rf.133bb95ee3eacad7aecf2ab4cd1e1ff4.jpg" width="640" height="640">
+  </image>
+  <image id="58" name="train/egg/not_damaged_17_jpg.rf.7298154b15cab2942d3351120a4337d5.jpg" width="640" height="640">
+  </image>
+  <image id="59" name="train/egg/not_damaged_18_jpg.rf.bc3fb0b05f8e3f72d25ae44db40362c0.jpg" width="640" height="640">
+  </image>
+  <image id="60" name="train/egg/not_damaged_19_jpg.rf.b68555e4ce0c87f7f6a9f9d441a47a08.jpg" width="640" height="640">
+  </image>
+  <image id="61" name="train/egg/not_damaged_20_jpg.rf.5e8498e31e0e596d64f6185f7c56534f.jpg" width="640" height="640">
+  </image>
+  <image id="62" name="train/egg/not_damaged_21_jpg.rf.a584f5d526fa26469cc144a40a3134da.jpg" width="640" height="640">
+  </image>
+  <image id="63" name="train/egg/not_damaged_22_jpg.rf.427da4fa2858bf0484b607774c6077c5.jpg" width="640" height="640">
+  </image>
+  <image id="64" name="train/egg/not_damaged_24_jpg.rf.a557aeb67c480dc55479509a77b4e160.jpg" width="640" height="640">
+  </image>
+  <image id="79" name="train/egg/not_damaged_42_jpg.rf.6626de5325fbf9ad4fec739b2a4e29f3.jpg" width="640" height="640">
+    <polygon label="egg" source="manual" occluded="0" points="150.48,52.11;224.76,24.46;313.25,27.62;349.60,55.27;344.85,104.26;303.77,146.14;206.58,141.40;159.97,155.62;119.67,125.60;120.46,86.88" z_order="0">
+    </polygon>
+  </image>
+  <image id="93" name="valid/egg/not_damaged_11_jpg.rf.95e1bc4944748cfd1a56fe23a42b6ae8.jpg" width="640" height="640">
+    <polygon label="egg" source="manual" occluded="0" points="174.98,199.87;181.30,283.62;236.61,315.22;317.99,334.98;374.88,306.53;397.00,244.90;380.41,188.01;321.94,143.77;251.62,135.08;216.06,139.82" z_order="0">
+    </polygon>
+  </image>
+  <image id="98" name="valid/egg/not_damaged_133_jpg.rf.a386f448c321cfb45a902bab446a0536.jpg" width="640" height="640">
+    <polygon label="egg" source="manual" occluded="0" points="24.06,289.94;50.93,255.18;122.04,224.36;182.88,232.26;213.69,260.71;203.42,317.60;142.58,351.57;84.90,364.21;39.87,346.04;22.48,320.76" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="8.26,101.10;27.22,146.14;71.47,186.43;112.56,197.50;157.60,176.16;175.77,123.22;159.18,74.24;110.98,39.47;50.93,31.57;12.21,70.29" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="430.19,244.11;486.29,224.36;573.20,234.63;620.61,270.19;628.51,308.11;600.85,342.88;540.01,360.26;453.89,336.56;412.01,292.31;411.22,259.92" z_order="0">
+    </polygon>
+  </image>
+  <image id="100" name="valid/egg/not_damaged_140_jpg.rf.5a28b6a69e229bf384854ec1e98b3f19.jpg" width="640" height="640">
+    <polygon label="egg" source="manual" occluded="0" points="263.47,39.47;307.72,1.55;376.46,2.34;417.55,26.83;438.09,72.66;424.66,135.87;391.47,174.58;344.06,192.76;295.87,169.05;264.26,134.29;261.89,89.25" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="275.32,270.19;305.35,230.68;375.67,206.98;435.72,223.57;466.53,255.97;474.43,309.69;449.94,355.52;374.88,387.13;310.09,368.95;278.48,342.09" z_order="0">
+    </polygon>
+    <polygon label="egg" source="manual" occluded="0" points="312.46,491.42;325.89,449.55;389.89,401.35;463.37,394.24;525.00,431.37;546.34,477.99;530.53,533.30;476.80,572.01;409.64,587.03;356.71,572.80;317.99,536.46" z_order="0">
+    </polygon>
+  </image>
+  <image id="101" name="valid/egg/not_damaged_143_jpg.rf.ddf38df15f549405285b01245a2ace36.jpg" width="640" height="640">
+  </image>
+  <image id="102" name="valid/egg/not_damaged_147_jpg.rf.f96813b608c83c8ca5fadbe68c1eefdb.jpg" width="640" height="640">
+  </image>
+  <image id="103" name="valid/egg/not_damaged_149_jpg.rf.c3c35299246e8c667ee33f02855a6e99.jpg" width="640" height="640">
+  </image>
+  <image id="104" name="valid/egg/not_damaged_150_jpg.rf.c58ad3cfc0417f557be06b685008bb60.jpg" width="640" height="640">
+  </image>
+  <image id="105" name="valid/egg/not_damaged_158_jpg.rf.344b69defda5c12d2f73f77ab479c93c.jpg" width="640" height="640">
+  </image>
+  <image id="106" name="valid/egg/not_damaged_25_jpg.rf.9a2e0ec799b7cfe4b89e93c2bdf7896f.jpg" width="640" height="640">
+  </image>
+  <image id="107" name="valid/egg/not_damaged_40_jpg.rf.71ddd6e202abb9dd3dd4721b6d408cba.jpg" width="640" height="640">
+  </image>
+  <image id="108" name="valid/egg/not_damaged_45_jpg.rf.afe41bdac424f6a6b81d8a809fdf73e0.jpg" width="640" height="640">
+  </image>
+  <image id="109" name="valid/egg/not_damaged_6_jpg.rf.1b79fa07c23ef838f19c9a226c9022f5.jpg" width="640" height="640">
+  </image>
+</annotations>

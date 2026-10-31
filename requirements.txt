@@ -1,0 +1,9 @@
+numpy
+opencv-python
+scikit-image
+scikit-learn
+matplotlib
+pandas
+tqdm
+yt-dlp
+# SAM is installed separately (see README / Colab notebook step)
