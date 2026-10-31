@@ -336,6 +336,46 @@ def t11(img):
     """T11 = run T10, then prune each connected component by colour consistency."""
     return prune_by_color(img, t10(img), K=1000.0)
 
+def prune_by_opening(mask, F=0.3):
+    if F <= 0:
+        return mask
+    mask_u8 = mask.astype(np.uint8)
+    n, cc = cv2.connectedComponents(mask_u8)
+    if n <= 1:
+        return mask
+    out = np.zeros_like(mask, dtype=bool)
+    for k in range(1, n):
+        comp = (cc == k)
+        orig_area = comp.sum()
+        if orig_area == 0:
+            continue
+        d = cv2.distanceTransform(comp.astype(np.uint8), cv2.DIST_L2, 5)
+        max_d = d.max()
+        if max_d == 0:
+            out |= comp; continue
+        r = F * max_d
+        ksize = max(3, int(round(2 * r + 1)))
+        if ksize % 2 == 0:
+            ksize += 1
+        k_el = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ksize, ksize))
+        opened = cv2.morphologyEx(comp.astype(np.uint8), cv2.MORPH_OPEN, k_el)
+        n_o, cc_o, stats_o, _ = cv2.connectedComponentsWithStats(opened)
+        if n_o > 1:
+            best_idx = 1 + np.argmax(stats_o[1:, cv2.CC_STAT_AREA])
+            largest = (cc_o == best_idx)
+            largest_filled = fill(largest)
+        else:
+            largest_filled = np.zeros_like(comp)
+        if largest_filled.sum() < 0.50 * orig_area:
+            out |= comp
+        else:
+            out |= largest_filled
+    return out
+
+def t12(img, F=0.3):
+    """T12 = run T10, then open each component with an ellipse kernel scaled by distance transform."""
+    return prune_by_opening(t10(img), F=F)
+
 TRIALS = [
  ("T01", t01, "Gray blur + Otsu, largest component", "Simplest baseline", "blur 5x5, Otsu, 1 component"),
  ("T02", t02, "Lab colour distance from border background + Otsu", "Egg differs in colour from background, not necessarily in brightness", "median Lab of 5% border, Otsu, 1 component"),
@@ -397,6 +437,26 @@ TRIALS.append((
     f"K={best_K} (sweep: {{{sweep_str}}}), core dt>0.5*max, thr=max(12, K*std), min_kept=40%"
 ))
 
+# Sweep over F on DEV for T12
+print("T12 F-sweep on DEV next to T10:")
+f_sweep_dev = {}
+for F_val in [0.0, 0.3, 0.5, 0.7, 0.9]:
+    ious = [metrics(prune_by_opening(m10, F=F_val), gt)[0] for img, gt, m10 in dev_preloaded]
+    f_sweep_dev[F_val] = float(np.mean(ious))
+    print(f"  F = {F_val:3.1f} -> dev mean IoU: {f_sweep_dev[F_val]:.4f} (T10: {t10_dev_mean:.4f})")
+candidate_F = [0.3, 0.5, 0.7, 0.9]
+best_F = max(candidate_F, key=lambda f: f_sweep_dev[f])
+print(f"Best candidate F: {best_F} with dev mean IoU: {f_sweep_dev[best_F]:.4f}")
+
+sweep_str_f = ", ".join(f"{k}: {v:.4f}" for k, v in f_sweep_dev.items())
+TRIALS.append((
+    "T12",
+    lambda img: prune_by_opening(t10(img), F=best_F),
+    "T10 + adaptive opening per component by distance-transform radius",
+    "8/20 worst DEV images over-segmented (high recall, low precision); prune protrusions (shadow tails, thin bridges)",
+    f"F={best_F} (sweep: {{{sweep_str_f}}}), r=F*max(d), open ellipse 2r+1, min_kept=50%"
+))
+
 w = csv.writer(open(LOG, "w", newline=""))
 w.writerow(["trial", "change", "why", "params", "dev_n", "iou_mean", "iou_median", "dice_mean", "dice_median", "decision", "reason"])
 best, best_iou = None, -1
@@ -405,8 +465,11 @@ for tid, fn, change, why, params in TRIALS:
     m = a[:, 0].mean()
     keep = m > best_iou + 0.005
     reason = f"improved dev IoU over best so far ({best_iou:.3f})" if keep else f"no gain over best so far ({best_iou:.3f})"
-    if tid == "T11" and not keep:
-        reason = f"no gain over best so far ({best_iou:.3f}); verified K=1000 matches T10 (diff 0.0001 < 0.01), low K over-prunes 3D shell gradients"
+    if tid == "T11":
+        params = "colour pruning at K=1.5..4.0 gave dev IoU 0.44-0.50 (best 0.500 at K=1.5); K=1000 is a no-op control (0.667)"
+        reason = "colour pruning at K=1.5..4.0 gave dev IoU 0.44-0.50 (best 0.500 at K=1.5); K=1000 is a no-op control (0.667); DISCARDED: shaded eggshell has large Lab gradients, so colour consistency removes real egg pixels"
+    elif tid == "T12" and not keep:
+        reason = f"no gain over best so far ({best_iou:.3f}); opening at F=0.3..0.9 smooths/erodes natural egg poles"
     w.writerow([tid, change, why, params, len(r), f"{m:.4f}", f"{np.median(a[:,0]):.4f}", f"{a[:,1].mean():.4f}", f"{np.median(a[:,1]):.4f}", "KEPT" if keep else "DISCARDED", reason])
     print(f"{tid} dev IoU mean={m:.3f} median={np.median(a[:,0]):.3f} Dice mean={a[:,1].mean():.3f} -> {'KEPT' if keep else 'DISCARDED'}")
     if keep:
