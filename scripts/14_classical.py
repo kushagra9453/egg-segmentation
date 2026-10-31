@@ -291,6 +291,51 @@ def t10(img):
             union |= c
     return _grabcut_refine(img, union.astype(np.uint8), 6)
 
+def prune_by_color(img, mask, K=1.5):
+    mask_u8 = mask.astype(np.uint8)
+    n, cc = cv2.connectedComponents(mask_u8)
+    if n <= 1:
+        return mask
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB).astype(np.float32)
+    el3 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    out = np.zeros_like(mask, dtype=bool)
+    for k in range(1, n):
+        comp = (cc == k)
+        orig_area = comp.sum()
+        if orig_area == 0:
+            continue
+        dt = cv2.distanceTransform(comp.astype(np.uint8), cv2.DIST_L2, 5)
+        max_d = dt.max()
+        if max_d == 0:
+            out |= comp; continue
+        core = dt > 0.5 * max_d
+        if not core.any():
+            core = comp
+        core_lab = lab[core]
+        med = np.median(core_lab, axis=0)
+        std_ch = np.std(core_lab, axis=0)
+        mean_core_std = float(std_ch.mean())
+        thresh = max(12.0, K * mean_core_std)
+        dists = np.linalg.norm(lab - med, axis=2)
+        pruned = comp & (dists < thresh)
+        p_u8 = cv2.morphologyEx(pruned.astype(np.uint8), cv2.MORPH_OPEN, el3)
+        n_p, cc_p, stats_p, _ = cv2.connectedComponentsWithStats(p_u8)
+        if n_p > 1:
+            best_k = 1 + np.argmax(stats_p[1:, cv2.CC_STAT_AREA])
+            largest = (cc_p == best_k)
+            largest_filled = fill(largest)
+        else:
+            largest_filled = np.zeros_like(comp)
+        if largest_filled.sum() < 0.40 * orig_area:
+            out |= comp
+        else:
+            out |= largest_filled
+    return out
+
+def t11(img):
+    """T11 = run T10, then prune each connected component by colour consistency."""
+    return prune_by_color(img, t10(img), K=1.5)
+
 TRIALS = [
  ("T01", t01, "Gray blur + Otsu, largest component", "Simplest baseline", "blur 5x5, Otsu, 1 component"),
  ("T02", t02, "Lab colour distance from border background + Otsu", "Egg differs in colour from background, not necessarily in brightness", "median Lab of 5% border, Otsu, 1 component"),
@@ -319,6 +364,34 @@ def run(fn, files):
     return res
 
 split = json.load(open("outputs/split.json"))
+
+# Sweep over K on DEV for T11
+print("T11 K-sweep on DEV:")
+k_sweep_dev = {}
+dev_preloaded = []
+for rel in split["dev"]:
+    d = load(rel)
+    if d is not None:
+        img, gt = d
+        m10 = t10(img)
+        dev_preloaded.append((img, gt, m10))
+
+for K_val in [1.5, 2.0, 2.5, 3.0, 4.0]:
+    ious = [metrics(prune_by_color(img, m10, K=K_val), gt)[0] for img, gt, m10 in dev_preloaded]
+    k_sweep_dev[K_val] = float(np.mean(ious))
+    print(f"  K = {K_val:3.1f} -> dev mean IoU: {k_sweep_dev[K_val]:.4f}")
+best_K = max(k_sweep_dev, key=k_sweep_dev.get)
+print(f"Best K: {best_K} with dev mean IoU: {k_sweep_dev[best_K]:.4f}")
+
+sweep_str = ", ".join(f"{k}: {v:.4f}" for k, v in k_sweep_dev.items())
+TRIALS.append((
+    "T11",
+    lambda img: prune_by_color(img, t10(img), K=best_K),
+    "T10 + colour consistency pruning per component against core Lab median",
+    "8/20 worst DEV images over-segmented (high recall, low precision); prune background/shadow by core colour",
+    f"K={best_K} (sweep: {{{sweep_str}}}), core dt>0.5*max, thr=max(12, K*std), min_kept=40%"
+))
+
 w = csv.writer(open(LOG, "w", newline=""))
 w.writerow(["trial", "change", "why", "params", "dev_n", "iou_mean", "iou_median", "dice_mean", "dice_median", "decision", "reason"])
 best, best_iou = None, -1
