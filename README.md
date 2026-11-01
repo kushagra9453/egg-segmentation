@@ -2,9 +2,9 @@
 
 This repository contains an end-to-end computer vision pipeline for egg segmentation and video tracking:
 1. **Task 1: Pseudo Ground-Truth Generation** using Meta's Segment Anything Model (SAM) with manual curation, bounding-box prompts, and CVAT polygon fixes.
-2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 29 disciplined trials on a leakage-free development split (culminating in Method T29, Dev IoU 0.773, Boundary F1 0.673).
+2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 29 disciplined trials on a leakage-free development split (culminating in Method T29, Dev Mean IoU 0.773, Boundary F1 0.670).
 3. **Task 3: Evaluation & Benchmarking** against a held-out evaluation set with boundary F-score, error visualizations, and scene-stratified analysis.
-4. **Task 4: Multi-Egg Video Tracking** using classical segmentation, distance-transform watershed splitting, and Hungarian matching with track confirmation and gating.
+4. **Task 4: Multi-Egg Video Tracking** using classical segmentation, distance-transform watershed splitting, and Hungarian matching with track confirmation, ghost-box prevention, and gating.
 
 ---
 
@@ -29,6 +29,7 @@ pip install -r requirements.txt
   ```
   *(Or ViT-H: `https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth`)*
 * **Video (Task 4 only)**: The YouTube screen-recording clip is placed at `data/video/eggs_clip.mov`.
+* **Tracked Video Deliverable**: Available on Google Drive at [https://drive.google.com/file/d/1bmdephNfQXLSc2-urg9mRzZL_sNBW8Ap/view?usp=drive_link](https://drive.google.com/file/d/1bmdephNfQXLSc2-urg9mRzZL_sNBW8Ap/view?usp=drive_link).
 
 ---
 
@@ -58,7 +59,7 @@ python scripts/13_split_v2.py
 ```
 
 ### Tasks 2 & 3: Classical Segmentation & Evaluation
-Executes trials T01–T21 on the development split (88 images), picks the best method (**T21**), evaluates on the held-out evaluation split (22 images), and generates evaluation metrics, boundary F-scores, worst-failure tiles, and scene-stratified IoU plots:
+Executes trials T01–T29 on the development split (88 images), picks the best method (**T29**), evaluates on the held-out evaluation split (22 images), and generates evaluation metrics, boundary F-scores, worst-failure tiles, and scene-stratified IoU plots:
 ```bash
 python scripts/14_classical.py
 ```
@@ -72,12 +73,19 @@ python scripts/14_classical.py
 * `experiment_log.csv`
 
 ### Task 4: Video Tracking
-Segments every 2nd frame at 320 px using method T10, splits touching eggs via distance-transform watershed, tracks eggs with Hungarian association (`scipy.optimize.linear_sum_assignment`), and exports H.264 video:
+Executes the refined classical tracking pipeline with automatic viewport cropping, temporal scene gating, T29 segmentation, Hungarian data association, local search on missed detections, and ghost box suppression:
 ```bash
 python scripts/15_track.py
 ```
-**Output generated**:
-* `outputs/tracking_output.mp4` (H.264 encoded, 320x198, source fps, persistent IDs)
+**Outputs generated**:
+* `outputs/tracking_final.mp4` (H.264 encoded, 960x528, 31.79 fps, yuv420p, QuickTime/browser compatible)
+* `outputs/tracking_check.jpg` (2x4 verification montage at 2s, 5s, 10s, 15s, 20s, 25s, 28s, 31s)
+
+### Report Generation
+To regenerate the PDF report (`report/report.pdf`) with all figures embedded:
+```bash
+python scripts/build_report_pdf.py
+```
 
 ---
 
@@ -96,6 +104,11 @@ python scripts/15_track.py
 *Note: T29 incorporates candidate internal texture penalty (Laplacian mean / 50) and egg-size area priors ($0.03 \le \text{area} \le 0.35$), providing a $+0.0073$ mean IoU gain over T21 on Dev while increasing Eval Mean IoU to 0.782 (+0.018 gain) and Boundary F1 to 0.717.*
 
 ### Video Tracking Performance
-* **Total Frames Processed**: 3,409 frames @ 31.79 fps.
-* **Tracking Strategy**: Gated Hungarian cost $(1 - \text{IoU}) + 0.3 \times \frac{\text{dist}}{\text{diag}}$ with 0.8 cost cutoff, 3-frame confirmation threshold, and 30-frame missed track retention.
-* **Output Format**: H.264 MP4 (`outputs/tracking_output.mp4`, 3.23 MB).
+* **Total Frames Processed**: 1,042 frames @ 31.79 fps ($32.78\text{ s}$ duration).
+* **Viewport Isolation**: Automatically cropped to `[70:1115, 29:1931]` ($1902 \times 1045\text{ px}$).
+* **Tracking Strategy**: Gated Hungarian cost $(0.60 \cdot \text{dist} + 0.30 \cdot (1 - \text{IoU}) + 0.10 \cdot \Delta \text{area})$ with constant-velocity prediction, 1.5 s internal memory, max 0.5 s drawing coasting cap, and strict 2-ID policy.
+* **Self-Check Results**:
+  1. No boxes on text slides ($t \ge 24.5\text{ s}$, 0 boxes); both eggs tracked at 5s: **PASS**.
+  2. No box drawn $>0.5\text{ s}$ without matching detection: **PASS**.
+  3. Only IDs "Egg 1" and "Egg 2" appear across video: **PASS**.
+  4. Egg 2 preserves ID 2 before and after finger occlusion: **PASS**.
