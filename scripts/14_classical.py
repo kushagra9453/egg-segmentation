@@ -433,6 +433,55 @@ def t15(img):
     ws = _ws_refine(img, union)
     return _gc_rel(img, (ws if ws.any() else union).astype(np.uint8))
 
+def _cand_felz(img, scales=(100, 120, 150)):
+    """Extra candidate regions from Felzenszwalb graph segmentation (edge-respecting), scored exactly like _candidate_regions."""
+    from skimage.segmentation import felzenszwalb
+    h, w = img.shape[:2]
+    el = lambda k: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    cands = []
+    for sc_ in scales:
+        lm = felzenszwalb(rgb, scale=sc_, sigma=0.8, min_size=int(0.01 * h * w))
+        cands += [lm == k for k in np.unique(lm)]
+    comps = []
+    for m in cands:
+        m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_OPEN, el(5))
+        m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, el(9))
+        n, cl, st, _ = cv2.connectedComponentsWithStats(m)
+        for k in range(1, n):
+            x, y, bw, bh, a = st[k]
+            if a / (h * w) < 0.02 or a / (h * w) > 0.7:
+                continue
+            c = fill(cl == k).astype(np.uint8)
+            cnt, _ = cv2.findContours(c, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cnt = max(cnt, key=cv2.contourArea)
+            if len(cnt) < 5:
+                continue
+            e = np.zeros_like(c); cv2.ellipse(e, cv2.fitEllipse(cnt), 1, -1)
+            fit = (e & c).sum() / max(1, (e | c).sum())
+            sol = cv2.contourArea(cnt) / max(cv2.contourArea(cv2.convexHull(cnt)), 1)
+            ys, xs = np.nonzero(c)
+            cd = np.hypot(xs.mean() / w - 0.5, ys.mean() / h - 0.5)
+            touch = int(x <= 1) + int(y <= 1) + int(x + bw >= w - 1) + int(y + bh >= h - 1)
+            region_v = hsv[:, :, 2][c > 0].mean() / 255.0
+            region_s = hsv[:, :, 1][c > 0].mean() / 255.0
+            bright_cue = region_v - 0.3 * region_s
+            comps.append((fit + 0.5 * sol - 0.6 * cd - 0.25 * touch + 0.2 * bright_cue, fit, sol, c))
+    return comps
+
+def t19(img):
+    """T15 with extra Felzenszwalb candidate regions (scales 100/120/150) in the candidate pool."""
+    comps = _candidate_regions(img) + _cand_felz(img)
+    if not comps:
+        return np.zeros(img.shape[:2], bool)
+    comps.sort(key=lambda t: -t[0]); best_sc = comps[0][0]; union = comps[0][3].copy()
+    for sc, fit, sol, c in comps[1:]:
+        if sc >= 0.75 * best_sc and fit >= 0.55 and sol >= 0.65 and (c & union).sum() == 0:
+            union |= c
+    ws = _ws_refine(img, union)
+    return _gc_rel(img, (ws if ws.any() else union).astype(np.uint8))
+
 TRIALS = [
  ("T01", t01, "Gray blur + Otsu, largest component", "Simplest baseline", "blur 5x5, Otsu, 1 component"),
  ("T02", t02, "Lab colour distance from border background + Otsu", "Egg differs in colour from background, not necessarily in brightness", "median Lab of 5% border, Otsu, 1 component"),
@@ -530,6 +579,14 @@ TRIALS.append((
     "fe=0.45, pf=0.10, bgd=0.25, 3 iters; sweep of 9 settings gave dev IoU 0.698-0.706 (stable plateau)"
 ))
 
+TRIALS.append((
+    "T19",
+    t19,
+    "T15 + extra candidate regions from Felzenszwalb graph segmentation (scales 100/120/150, sigma 0.8) added to the K-means candidate pool",
+    "Colour clustering never isolates some eggs (pink egg on pink bowl); graph segmentation splits regions along edges, giving new egg-shaped candidates",
+    "scales 100/120/150, min_size 1% of image; scoring and union rule identical to T10; sweep over single scales 50-400 gave 0.696-0.740 (noisy), SLIC superpixels hurt (0.607)"
+))
+
 w = csv.writer(open(LOG, "w", newline=""))
 w.writerow(["trial", "change", "why", "params", "dev_n", "iou_mean", "iou_median", "dice_mean", "dice_median", "decision", "reason"])
 best, best_iou = None, -1
@@ -543,6 +600,8 @@ for tid, fn, change, why, params in TRIALS:
         reason = "colour pruning at K=1.5..4.0 gave dev IoU 0.44-0.50 (best 0.500 at K=1.5); K=1000 is a no-op control (0.667); DISCARDED: shaded eggshell has large Lab gradients, so colour consistency removes real egg pixels"
     elif tid == "T12" and not keep:
         reason = f"no gain over best so far ({best_iou:.3f}); opening at F=0.3..0.9 smooths/erodes natural egg poles"
+    elif tid == "T19" and keep:
+        reason = f"improved dev IoU over best so far ({best_iou:.3f}) but gain is within noise: bootstrap 95% CI of the per-image gain is [-0.03, +0.07]; positive in most random scene-halves (median +0.021, worst -0.012); scale range chosen after a dev sweep"
     w.writerow([tid, change, why, params, len(r), f"{m:.4f}", f"{np.median(a[:,0]):.4f}", f"{a[:,1].mean():.4f}", f"{np.median(a[:,1]):.4f}", "KEPT" if keep else "DISCARDED", reason])
     print(f"{tid} dev IoU mean={m:.3f} median={np.median(a[:,0]):.3f} Dice mean={a[:,1].mean():.3f} -> {'KEPT' if keep else 'DISCARDED'}")
     if keep:
@@ -600,6 +659,20 @@ w.writerow([
     "",
     "DISCARDED",
     "Shape filter on final components (ellipse fit >= 0.6-0.8, solidity >= 0.85-0.95). Dev IoU 0.690-0.700 vs 0.703; false regions are smooth after GrabCut and real partly hidden eggs fail the test; discarded."
+])
+
+w.writerow([
+    "T20",
+    "Re-rank 4 fully refined hypotheses per image (seeded from the 1st-4th best candidate) by score + edge strength along boundary + contrast with surrounding ring",
+    "Oracle over the 4 hypotheses is 0.78 vs 0.729 for the top pick, so better selection could help",
+    "score + w_e*edge + w_c*contrast; 7 formulas tried",
+    len(split["dev"]),
+    "0.7422",
+    "",
+    "",
+    "",
+    "DISCARDED",
+    "Best blend (w_e=1/3, w_c=1) gave +0.014 dev IoU but neighbouring weights gave -0.003 to +0.010 and flipped sign across random scene-halves; edge-only or contrast-only re-ranking was worse than the original score (0.69-0.70 vs 0.729); treated as selection noise"
 ])
 
 def boundary_f1(p, g, tol=2):

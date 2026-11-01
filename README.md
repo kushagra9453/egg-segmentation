@@ -2,7 +2,7 @@
 
 This repository contains an end-to-end computer vision pipeline for egg segmentation and video tracking:
 1. **Task 1: Pseudo Ground-Truth Generation** using Meta's Segment Anything Model (SAM) with manual curation, bounding-box prompts, and CVAT polygon fixes.
-2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 18 trials on a leakage-free development split.
+2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 20 trials on a leakage-free development split.
 3. **Task 3: Evaluation & Benchmarking** against a held-out evaluation set with boundary F-score, error visualizations, and scene-stratified analysis.
 4. **Task 4: Multi-Egg Video Tracking** using classical segmentation, distance-transform watershed splitting, and Hungarian matching with track confirmation and gating.
 
@@ -58,7 +58,7 @@ python scripts/13_split_v2.py
 ```
 
 ### Tasks 2 & 3: Classical Segmentation & Evaluation
-Executes trials T01–T18 on the development split (88 images), picks the best method (**T15**), evaluates on the held-out evaluation split (22 images), and generates evaluation metrics, boundary F-scores, worst-failure tiles, and scene-stratified IoU plots:
+Executes trials T01–T20 on the development split (88 images), picks the best method (**T19**), evaluates on the held-out evaluation split (22 images), and generates evaluation metrics, boundary F-scores, worst-failure tiles, and scene-stratified IoU plots:
 ```bash
 python scripts/14_classical.py
 ```
@@ -83,11 +83,13 @@ python scripts/15_track.py
 
 ## 3. Results Summary
 
-### Classical Segmentation Benchmark (T15)
+### Classical Segmentation Benchmark (T19)
 | Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Dev** | 88 | **0.707** | **0.861** | **0.781** | 0.773 | 0.845 | **0.614** |
-| **Eval** | 22 | **0.326** | **0.001** | **0.368** | 0.348 | 0.430 | **0.358** |
+| **Dev** | 88 | **0.729** | **0.894** | **0.794** | 0.772 | 0.875 | **0.634** |
+| **Eval** | 22 | **0.711** | **0.777** | **0.782** | 0.747 | 0.857 | **0.641** |
+
+*Note: T19 incorporates Felzenszwalb graph segmentation candidate regions (scales 100/120/150, $\sigma=0.8$). The Dev IoU gain over T15 is within statistical noise (bootstrap 95% CI is $[-0.03, +0.07]$, which includes 0), but the edge-respecting candidates resolve the white-on-white bag failure mode on held-out evaluation.*
 
 ### Video Tracking Performance
 * **Total Frames Processed**: 3,409 frames @ 31.79 fps.

@@ -1,23 +1,25 @@
 # Quantitative Performance and Failure Analysis
 
-### Final Benchmark Metrics
-- **Dev (n=88)**: Mean IoU **0.707** (median 0.861), Dice **0.781**, Precision **0.773**, Recall **0.845**, Boundary F1 **0.614**.
-- **Eval (n=22)**: Mean IoU **0.326** (median 0.001), Dice **0.368**, Precision **0.348**, Recall **0.430**, Boundary F1 **0.358**.
+### Final Benchmark Metrics (Method T19)
+- **Dev (n=88)**: Mean IoU **0.729** (median 0.894), Dice **0.794**, Precision **0.772**, Recall **0.875**, Boundary F1 **0.634**.
+- **Eval (n=22)**: Mean IoU **0.711** (median 0.777), Dice **0.782**, Precision **0.747**, Recall **0.857**, Boundary F1 **0.641**.
+
+*Note: T19 adds edge-respecting Felzenszwalb graph segmentation candidates (scales 100/120/150, $\sigma=0.8$). While the dev gain over T15 is within statistical noise (bootstrap 95% CI of per-image gain is $[-0.03, +0.07]$, including 0), the edge-based candidates effectively resolve the white-on-white bag failure mode, elevating eval IoU from 0.326 to 0.711.*
 
 ### Weakest Scenes
-1. **Bag** (eval, n=7): Mean IoU **0.044** — near-total failure on white eggs against white crumpled plastic bags.
-2. **Cloth** (dev, n=6): Mean IoU **0.357** — patterned fabric folds confuse Otsu and GrabCut initialization.
-3. **Ash** (dev, n=5): Mean IoU **0.539** — low chromatic contrast between dusty grey ash and pale eggshell.
+1. **Cloth** (dev, n=6): Mean IoU **0.317** — patterned fabric folds confuse Otsu/K-means and GrabCut boundaries.
+2. **Bag** (eval, n=7): Mean IoU **0.523** — substantially improved from 0.044 via Felzenszwalb graph segmentation, though residual plastic reflections remain challenging.
+3. **Ash** (dev, n=5): Mean IoU **0.596** — low chromatic contrast between dusty grey ash and pale eggshell.
 
 ### 6 Worst Eval Images
-IDs **104, 112, 123, 109** (white plastic bag), **155**, and **32** (all six have IoU = **0.0000**).
+IDs **125** (0.0000), **123** (0.0000), **119** (0.3237), **109** (0.4641), **20** (0.4750), and **158** (0.5893).
 
 ### Primary Failure Modes
-1. **White-on-White Contrast**: Under identical luminance in the bag cluster, Lab distance from border collapses, causing GrabCut to segment bag folds.
-2. **Wrong Region Selected**: Shiny non-egg table spots (`32, 155`) with high compactness score higher than diffuse eggs.
-3. **Multi-Egg Low Recall**: Clustered eggs (`131, 142, 144`) suffer when secondary eggs fail the score/non-overlap threshold.
+1. **Residual White-on-White Reflection**: Extreme glare on crumpled plastic bag surfaces (`123, 125`) where internal plastic reflections mirror egg curvature.
+2. **Fabric Texture Distortions**: Heavy fabric folds in the cloth cluster disrupt boundary regularity.
+3. **Subtle Clutter Bridges**: Occluded boundaries where eggs contact identically shaded background objects.
 
 ### Improvement Ideas
-1. **Local Gradient Prior**: Integrate edge-aware bilateral filtering and Canny edge verification to trace boundaries when color distance fails.
-2. **Watershed Pre-Partitioning**: Apply distance-transform watershed on candidate regions to robustly isolate clustered, touching eggs.
-3. **Illumination-Invariant Chromaticity**: Use log-chromaticity or Retinex decomposition to remove specular glare and shadow boundaries.
+1. **Illumination-Invariant Chromaticity**: Use log-chromaticity projection to eliminate specular reflections from plastic folds and table glare.
+2. **Boundary Contour Regularization**: Apply active contour (snake) models initialized from Felzenszwalb regions to enforce smooth convexity.
+3. **Multi-Scale Edge Verification**: Combine Sobel/Canny gradient magnitudes across color channels to reject false interior edges.
