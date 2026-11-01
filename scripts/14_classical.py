@@ -494,6 +494,36 @@ def t21(img, ratio=0.85):
     ws = _ws_refine(img, union)
     return _gc_rel(img, (ws if ws.any() else union).astype(np.uint8))
 
+def t29(img, ratio=0.85, w_tex=0.05, w_size=0.10):
+    """T21 with candidate texture penalty (Laplacian mean) and egg-size area fraction prior."""
+    h, w = img.shape[:2]
+    total_px = h * w
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    lap = np.abs(cv2.Laplacian(gray, cv2.CV_32F))
+    comps = _candidate_regions(img) + _cand_felz(img)
+    if not comps:
+        return np.zeros((h, w), bool)
+    new_comps = []
+    for sc, fit, sol, c in comps:
+        mask_bool = c > 0
+        area_frac = c.sum() / total_px
+        tex = lap[mask_bool].mean() / 50.0
+        if area_frac < 0.03:
+            size_pen = (0.03 - area_frac) / 0.03
+        elif area_frac > 0.35:
+            size_pen = min(1.0, (area_frac - 0.35) / 0.35)
+        else:
+            size_pen = 0.0
+        new_sc = sc - w_tex * tex - w_size * size_pen
+        new_comps.append((new_sc, fit, sol, c))
+    new_comps.sort(key=lambda t: -t[0])
+    best_sc = new_comps[0][0]; union = new_comps[0][3].copy()
+    for sc, fit, sol, c in new_comps[1:]:
+        if sc >= ratio * best_sc and fit >= 0.55 and sol >= 0.65 and (c & union).sum() == 0:
+            union |= c
+    ws = _ws_refine(img, union)
+    return _gc_rel(img, (ws if ws.any() else union).astype(np.uint8))
+
 TRIALS = [
  ("T01", t01, "Gray blur + Otsu, largest component", "Simplest baseline", "blur 5x5, Otsu, 1 component"),
  ("T02", t02, "Lab colour distance from border background + Otsu", "Egg differs in colour from background, not necessarily in brightness", "median Lab of 5% border, Otsu, 1 component"),

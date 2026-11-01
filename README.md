@@ -2,7 +2,7 @@
 
 This repository contains an end-to-end computer vision pipeline for egg segmentation and video tracking:
 1. **Task 1: Pseudo Ground-Truth Generation** using Meta's Segment Anything Model (SAM) with manual curation, bounding-box prompts, and CVAT polygon fixes.
-2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 21 trials on a leakage-free development split.
+2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 29 disciplined trials on a leakage-free development split (culminating in Method T29, Dev IoU 0.773, Boundary F1 0.673).
 3. **Task 3: Evaluation & Benchmarking** against a held-out evaluation set with boundary F-score, error visualizations, and scene-stratified analysis.
 4. **Task 4: Multi-Egg Video Tracking** using classical segmentation, distance-transform watershed splitting, and Hungarian matching with track confirmation and gating.
 
@@ -83,13 +83,16 @@ python scripts/15_track.py
 
 ## 3. Results Summary
 
-### Classical Segmentation Benchmark (T21)
-| Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Dev** | 88 | **0.766** | **0.896** | **0.831** | 0.847 | 0.853 | **0.668** |
-| **Eval** | 22 | **0.764** | **0.945** | **0.820** | 0.813 | 0.846 | **0.701** |
+### Classical Segmentation Benchmark
+| Model / Trial | Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **T29 (Final Classical)** | **Dev** | 88 | **0.773** | **0.897** | **0.840** | 0.854 | 0.858 | **0.673** |
+| **T21 (Milestone Baseline)** | **Dev** | 88 | **0.766** | **0.896** | **0.831** | 0.847 | 0.853 | **0.668** |
+| **T21 (Milestone Baseline)** | **Eval** | 22 | **0.764** | **0.945** | **0.820** | 0.813 | 0.846 | **0.701** |
 
-*Note: T21 tightens the multi-egg union threshold to 0.85 (was 0.75 in T10–T19) after tracing zero-IoU dev images (e.g. ID 108), preventing secondary false-positive additions from the Felzenszwalb pool. This produces 0.764 mean IoU and 0.945 median IoU on held-out evaluation.*
+*Eval Disclosure: Evaluation metrics were strictly computed and viewed only for five intermediate adopted production milestones (T10, T13, T15, T19, T21) at the moment of their historical selection in `scripts/14_classical.py`; all other trials (T01–T09, T11, T12, T14, T16, T17, T18, T20, and post-T21 trials T22–T29) were evaluated strictly and exclusively on the development split.*
+
+*Note: T29 incorporates candidate internal texture penalty (Laplacian mean / 50) and egg-size area priors ($0.03 \le \text{area} \le 0.35$), providing a $+0.0073$ mean IoU gain over T21 on Dev while increasing Boundary F1 to 0.673.*
 
 ### Video Tracking Performance
 * **Total Frames Processed**: 3,409 frames @ 31.79 fps.

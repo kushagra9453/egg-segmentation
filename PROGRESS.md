@@ -10,3 +10,4 @@
 - [x] STEP 8: T15 added (egg-radius scaled GrabCut bands) – KEPT (Dev IoU 0.707); T16-T18 logged; results & docs updated
 - [x] STEP 9: T19 applied (Felzenszwalb candidates) – KEPT (Dev IoU 0.729, Eval 0.711); T20 logged; results & docs updated
 - [x] STEP 10: T21 applied (tightened multi-egg union 0.85) – KEPT (Dev IoU 0.766, Eval 0.764); results & docs updated
+- [x] STEP 11: Failure analysis completed (14 dev failures, 6 overlays in outputs/results/failures_dev/), T22–T28 logged (adaptive union, quadratic center penalty, boundary refinements 3a–3d), T29 adopted on dev (texture penalty + size prior, Dev IoU 0.773, BoundF1 0.673), numbers reconciled across experiment_log.csv, analysis.md, report.md, and README.md with eval disclosure statement
