@@ -1,13 +1,13 @@
 # Quantitative Performance and Failure Analysis
 
 ### Final Benchmark Metrics
-- **Dev (n=88)**: Mean IoU **0.667** (median 0.746), Dice **0.757**, Precision **0.776**, Recall **0.788**, Boundary F1 **0.557**.
-- **Eval (n=22)**: Mean IoU **0.287** (median 0.001), Dice **0.339**, Precision **0.322**, Recall **0.409**, Boundary F1 **0.307**.
+- **Dev (n=88)**: Mean IoU **0.707** (median 0.861), Dice **0.781**, Precision **0.773**, Recall **0.845**, Boundary F1 **0.614**.
+- **Eval (n=22)**: Mean IoU **0.326** (median 0.001), Dice **0.368**, Precision **0.348**, Recall **0.430**, Boundary F1 **0.358**.
 
 ### Weakest Scenes
-1. **Bag** (eval, n=7): Mean IoU **0.042** — near-total failure on white eggs against white crumpled plastic bags.
-2. **Cloth** (dev, n=6): Mean IoU **0.408** — patterned fabric folds confuse Otsu and GrabCut initialization.
-3. **Ash** (dev, n=5): Mean IoU **0.558** — low chromatic contrast between dusty grey ash and pale eggshell.
+1. **Bag** (eval, n=7): Mean IoU **0.044** — near-total failure on white eggs against white crumpled plastic bags.
+2. **Cloth** (dev, n=6): Mean IoU **0.357** — patterned fabric folds confuse Otsu and GrabCut initialization.
+3. **Ash** (dev, n=5): Mean IoU **0.539** — low chromatic contrast between dusty grey ash and pale eggshell.
 
 ### 6 Worst Eval Images
 IDs **104, 112, 123, 109** (white plastic bag), **155**, and **32** (all six have IoU = **0.0000**).

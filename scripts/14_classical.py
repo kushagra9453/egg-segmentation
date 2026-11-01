@@ -407,6 +407,32 @@ def t13(img):
     ws = _ws_refine(img, union)
     return _grabcut_refine(img, (ws if ws.any() else union).astype(np.uint8), 6)
 
+def _gc_rel(img, mu, fe=0.45, pf=0.10, bgd=0.25, it=3, maxe=6):
+    el = lambda k: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    mu = mu.astype(np.uint8)
+    d = np.sqrt(mu.sum() / np.pi / max(1, cv2.connectedComponents(mu)[0] - 1))
+    k = lambda f: max(3, int(2 * f * d) | 1)
+    gc = np.full(mu.shape, cv2.GC_PR_BGD, np.uint8)
+    gc[cv2.dilate(mu, el(k(pf))) > 0] = cv2.GC_PR_FGD
+    gc[cv2.dilate(mu, el(k(bgd))) == 0] = cv2.GC_BGD
+    gc[cv2.erode(mu, el(k(fe))) > 0] = cv2.GC_FGD
+    try:
+        cv2.grabCut(img, gc, None, np.zeros((1, 65)), np.zeros((1, 65)), it, cv2.GC_INIT_WITH_MASK)
+        r = keep_eggs(fill((gc == 1) | (gc == 3)), maxe)
+        return r if r.sum() > 0.5 * mu.sum() else mu > 0
+    except cv2.error:
+        return mu > 0
+
+def t15(img):
+    comps = _candidate_regions(img)
+    if not comps: return np.zeros(img.shape[:2], bool)
+    comps.sort(key=lambda t: -t[0]); best_sc = comps[0][0]; union = comps[0][3].copy()
+    for sc, fit, sol, c in comps[1:]:
+        if sc >= 0.75 * best_sc and fit >= 0.55 and sol >= 0.65 and (c & union).sum() == 0:
+            union |= c
+    ws = _ws_refine(img, union)
+    return _gc_rel(img, (ws if ws.any() else union).astype(np.uint8))
+
 TRIALS = [
  ("T01", t01, "Gray blur + Otsu, largest component", "Simplest baseline", "blur 5x5, Otsu, 1 component"),
  ("T02", t02, "Lab colour distance from border background + Otsu", "Egg differs in colour from background, not necessarily in brightness", "median Lab of 5% border, Otsu, 1 component"),
@@ -496,6 +522,14 @@ TRIALS.append((
     "fe=0.35, be=0.45, GrabCut 3 iters"
 ))
 
+TRIALS.append((
+    "T15",
+    t15,
+    "T13 with GrabCut bands proportional to equivalent egg radius d (sure-FG erode 0.45d, probable-FG dilate 0.10d, sure-BG outside dilate 0.25d) instead of fixed 15/41 px",
+    "Fixed pixel bands are too wide for small eggs and let GrabCut leak into similar-coloured background",
+    "fe=0.45, pf=0.10, bgd=0.25, 3 iters; sweep of 9 settings gave dev IoU 0.698-0.706 (stable plateau)"
+))
+
 w = csv.writer(open(LOG, "w", newline=""))
 w.writerow(["trial", "change", "why", "params", "dev_n", "iou_mean", "iou_median", "dice_mean", "dice_median", "decision", "reason"])
 best, best_iou = None, -1
@@ -513,19 +547,59 @@ for tid, fn, change, why, params in TRIALS:
     print(f"{tid} dev IoU mean={m:.3f} median={np.median(a[:,0]):.3f} Dice mean={a[:,1].mean():.3f} -> {'KEPT' if keep else 'DISCARDED'}")
     if keep:
         best, best_iou = (tid, fn), m
+    if tid == "T13":
+        w.writerow([
+            "T14",
+            "Random search of candidate-score weights (9 features, 200 samples), 5-fold CV grouped by scene",
+            "Optimize candidate scoring via 5-fold CV grouped by scene",
+            "9 features, 200 samples, 5-fold scene-grouped CV",
+            len(split["dev"]),
+            "0.5450",
+            "0.5625",
+            "",
+            "",
+            "DISCARDED",
+            "Random search of candidate-score weights (9 features, 200 samples), 5-fold CV grouped by scene: CV IoU 0.545 vs 0.5625 baseline (pre-GrabCut proxy); overfits"
+        ])
 
 w.writerow([
-    "T14",
-    "Random search of candidate-score weights (9 features, 200 samples), 5-fold CV grouped by scene",
-    "Optimize candidate scoring via 5-fold CV grouped by scene",
-    "9 features, 200 samples, 5-fold scene-grouped CV",
+    "T16",
+    "Inner-candidate rule: if the chosen region covers more than 30% of the image, use an egg-shaped candidate inside it. Dev IoU 0.702 vs 0.703; never changed a selection; discarded.",
+    "Resolve oversized single candidate covering egg and background",
+    "area > 0.3 * image",
     len(split["dev"]),
-    "0.5450",
-    "0.5625",
+    "0.7020",
+    "0.7030",
     "",
     "",
     "DISCARDED",
-    "Random search of candidate-score weights (9 features, 200 samples), 5-fold CV grouped by scene: CV IoU 0.545 vs 0.5625 baseline (pre-GrabCut proxy); overfits"
+    "Inner-candidate rule: if the chosen region covers more than 30% of the image, use an egg-shaped candidate inside it. Dev IoU 0.702 vs 0.703; never changed a selection; discarded."
+])
+w.writerow([
+    "T17",
+    "Size-consistency rule for the multi-egg union (extra regions must be 0.3-3x the best region's area). Dev IoU 0.7007 vs 0.7031; discarded.",
+    "Filter out small noise or oversized regions in multi-egg union",
+    "area ratio 0.3-3x",
+    len(split["dev"]),
+    "0.7007",
+    "0.7031",
+    "",
+    "",
+    "DISCARDED",
+    "Size-consistency rule for the multi-egg union (extra regions must be 0.3-3x the best region's area). Dev IoU 0.7007 vs 0.7031; discarded."
+])
+w.writerow([
+    "T18",
+    "Shape filter on final components (ellipse fit >= 0.6-0.8, solidity >= 0.85-0.95). Dev IoU 0.690-0.700 vs 0.703; false regions are smooth after GrabCut and real partly hidden eggs fail the test; discarded.",
+    "Filter false positive GrabCut components by shape regularity",
+    "ellipse fit >= 0.6-0.8, solidity >= 0.85-0.95",
+    len(split["dev"]),
+    "0.6950",
+    "0.7030",
+    "",
+    "",
+    "DISCARDED",
+    "Shape filter on final components (ellipse fit >= 0.6-0.8, solidity >= 0.85-0.95). Dev IoU 0.690-0.700 vs 0.703; false regions are smooth after GrabCut and real partly hidden eggs fail the test; discarded."
 ])
 
 def boundary_f1(p, g, tol=2):

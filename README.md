@@ -2,7 +2,7 @@
 
 This repository contains an end-to-end computer vision pipeline for egg segmentation and video tracking:
 1. **Task 1: Pseudo Ground-Truth Generation** using Meta's Segment Anything Model (SAM) with manual curation, bounding-box prompts, and CVAT polygon fixes.
-2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 10 trials on a leakage-free development split.
+2. **Task 2: Classical Image Processing Segmentation** evaluated iteratively across 18 trials on a leakage-free development split.
 3. **Task 3: Evaluation & Benchmarking** against a held-out evaluation set with boundary F-score, error visualizations, and scene-stratified analysis.
 4. **Task 4: Multi-Egg Video Tracking** using classical segmentation, distance-transform watershed splitting, and Hungarian matching with track confirmation and gating.
 
@@ -58,7 +58,7 @@ python scripts/13_split_v2.py
 ```
 
 ### Tasks 2 & 3: Classical Segmentation & Evaluation
-Executes trials T01–T10 on the development split (88 images), picks the best method (**T10**), evaluates on the held-out evaluation split (22 images), and generates evaluation metrics, boundary F-scores, worst-failure tiles, and scene-stratified IoU plots:
+Executes trials T01–T18 on the development split (88 images), picks the best method (**T15**), evaluates on the held-out evaluation split (22 images), and generates evaluation metrics, boundary F-scores, worst-failure tiles, and scene-stratified IoU plots:
 ```bash
 python scripts/14_classical.py
 ```
@@ -83,11 +83,11 @@ python scripts/15_track.py
 
 ## 3. Results Summary
 
-### Classical Segmentation Benchmark (T10)
+### Classical Segmentation Benchmark (T15)
 | Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Dev** | 88 | **0.667** | **0.746** | **0.757** | 0.776 | 0.788 | **0.557** |
-| **Eval** | 22 | **0.287** | **0.001** | **0.339** | 0.322 | 0.409 | **0.307** |
+| **Dev** | 88 | **0.707** | **0.861** | **0.781** | 0.773 | 0.845 | **0.614** |
+| **Eval** | 22 | **0.326** | **0.001** | **0.368** | 0.348 | 0.430 | **0.358** |
 
 ### Video Tracking Performance
 * **Total Frames Processed**: 3,409 frames @ 31.79 fps.

@@ -7,7 +7,7 @@
 ## Executive Summary
 This report presents an end-to-end computer vision solution for segmenting and tracking eggs across diverse, challenging real-world scenes. The project is organized into four tasks:
 1. **Task 1: Ground-Truth Generation** utilizing Meta's Segment Anything Model (SAM) enhanced with manual bounding boxes, CVAT polygon corrections, and parametric ellipse fitting.
-2. **Task 2: Classical Segmentation Optimization** developed iteratively over 10 disciplined trials on a leakage-free development split (88 images).
+2. **Task 2: Classical Segmentation Optimization** developed iteratively over 18 disciplined trials on a leakage-free development split (88 images).
 3. **Task 3: Evaluation and Failure Analysis** on an unseen evaluation split (22 images) using IoU, Dice, Precision, Recall, and Boundary F-score metrics alongside scene-stratified breakdown.
 4. **Task 4: Multi-Object Video Tracking** executing on a 3,409-frame video clip combining classical segmentation, distance-transform watershed splitting, and gated Hungarian matching.
 
@@ -47,7 +47,7 @@ The dataset consists of 110 images captured across repeated visual environments 
   * Complete cluster independence: zero overlapping scenes between dev and eval.
   * All hyperparameter tuning was restricted strictly to the development split.
 
-### 2.2 Classical Experiment Log (Trials T01–T10)
+### 2.2 Classical Experiment Log (Trials T01–T18)
 All experiments were logged to `experiment_log.csv`. A trial was adopted only if mean Dev IoU improved by $>0.005$:
 
 | Trial | Modification | Hypothesis / Motivation | Parameters | Dev IoU | Dev Dice | Decision | Rationale |
@@ -61,31 +61,39 @@ All experiments were logged to `experiment_log.csv`. A trial was adopted only if
 | **T07** | Multi-K KMeans + shape scoring + GrabCut | Border model fails on skin/white; score candidates by geometry | $K \in \{2..5\}$, fit + 0.5 sol - 0.6 dist - 0.25 touch | 0.632 | 0.720 | **KEPT** | +0.158 gain over T06 |
 | **T08** | T07 + relaxed multi-egg union threshold | Multi-egg images (44, 144, 131) had low recall | Union threshold $0.9 \to 0.6$ | 0.582 | 0.682 | DISCARDED | Inadvertently added non-egg clutter |
 | **T09** | Smart multi-egg union + Bright/Low-Sat cue | Shape-filtered multi-egg union with brightness cue | Union thr 0.7, fit $\ge 0.5$, sol $\ge 0.6$, $+0.2(V - 0.3S)$ | 0.660 | 0.751 | **KEPT** | +0.028 gain over T07 |
-| **T10** | T09 with tightened multi-egg threshold | Avoid marginal non-egg regions | Union thr 0.75, fit $\ge 0.55$, sol $\ge 0.65$ | **0.667** | **0.757** | **KEPT** | +0.007 gain; selected as final method |
+| **T10** | T09 with tightened multi-egg threshold | Avoid marginal non-egg regions | Union thr 0.75, fit $\ge 0.55$, sol $\ge 0.65$ | 0.667 | 0.757 | **KEPT** | +0.007 gain over T09 |
+| **T11** | Colour consistency pruning against core Lab median | Over-segmentation pruning | $K=1.5..4.0$ (sweep: 0.44-0.50); $K=1000$ control (0.667) | 0.667 | 0.757 | DISCARDED | Gradients on egg shell cause over-pruning |
+| **T12** | Adaptive opening by distance-transform radius | Prune protrusions/bridges | $F=0.3$ (sweep: 0.615-0.666) | 0.666 | 0.754 | DISCARDED | Erodes natural egg poles |
+| **T13** | Marker-controlled watershed on Lab gradient + GrabCut | Bridge split lit/shaded egg halves | $fe=0.35, be=0.45$, GrabCut 3 iters | 0.681 | 0.765 | **KEPT** | +0.014 gain over T10 |
+| **T14** | Random search of candidate scoring weights | Optimize feature weights via 5-fold CV | 9 features, 200 samples, 5-fold scene-grouped CV | 0.545 | - | DISCARDED | Proxy overfits to scene specifics |
+| **T15** | GrabCut bands proportional to equivalent egg radius $d$ | Adapt band widths to object size | $fe=0.45d, pf=0.10d, bgd=0.25d$, 3 iters | **0.707** | **0.781** | **KEPT** | +0.026 gain over T13; selected as final method |
+| **T16** | Inner-candidate rule on large regions | Replace $>30\%$ image region | Area $>0.3 \times$ image | 0.702 | - | DISCARDED | Never changed a selection |
+| **T17** | Multi-egg union size-consistency rule | Extra regions must be 0.3-3x best region area | Area ratio 0.3-3x | 0.701 | - | DISCARDED | No gain over T15 (0.7031) |
+| **T18** | Shape filter on final components | Filter post-GrabCut false positives | Ellipse fit $\ge 0.6-0.8$, solidity $\ge 0.85-0.95$ | 0.695 | - | DISCARDED | Smooth GrabCut false regions pass; partial eggs fail |
 
 ---
 
 ## 3. Task 3: Evaluation, Metrics, and Failure Modes
 
 ### 3.1 Quantitative Results
-Evaluating the selected **T10** method across the dataset yields:
+Evaluating the selected **T15** method across the dataset yields:
 
 | Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Development** | 88 | **0.667** | **0.746** | **0.757** | 0.776 | 0.788 | **0.557** |
-| **Evaluation** | 22 | **0.287** | **0.001** | **0.339** | 0.322 | 0.409 | **0.307** |
+| **Development** | 88 | **0.707** | **0.861** | **0.781** | 0.773 | 0.845 | **0.614** |
+| **Evaluation** | 22 | **0.326** | **0.001** | **0.368** | 0.348 | 0.430 | **0.358** |
 
 *Note: Boundary F-score is computed at a 2-pixel tolerance at the $320\text{ px}$ working scale.*
 
 ### 3.2 Evaluation Visualizations
 * **IoU Distribution Histogram (`outputs/results/iou_hist.png`)**: Illustrates a bimodal performance distribution on eval — high accuracy on contrasting scenes alongside a zero-IoU cluster corresponding to the white bag failure mode.
 * **Scene-Grouped IoU Comparison (`outputs/results/scene_iou.png`)**:
-  * High-performing scenes: `keyboard` (0.94), `leaves` (0.89), `hand` (0.76), `tub` (0.72), `pan` (0.72).
-  * Low-performing scenes: `ash` (0.56), `cloth` (0.41), `bag` (0.04).
+  * High-performing scenes: `keyboard` (0.99), `leaves` (0.88), `hand` (0.79), `pan` (0.73), `tub` (0.72), `other` (0.70 dev / 0.46 eval).
+  * Low-performing scenes: `ash` (0.54), `cloth` (0.36), `bag` (0.04).
 * **Worst Failures Tile (`outputs/results/worst_failures.jpg`)**: Compares original image, ground truth overlay, classical prediction, and false-positive/false-negative error maps for the 6 worst eval failures.
 
 ### 3.3 Failure Mode Analysis
-1. **Low-Contrast White-on-White (`bag` scene, Mean IoU: 0.042)**: In eval images **104, 112, 123, 109**, pale eggs lie on crumpled white plastic. Because both egg and background exhibit near-identical high luminance and low saturation, color distance drops to zero. GrabCut segments the high-contrast plastic bag folds instead of the egg boundary.
+1. **Low-Contrast White-on-White (`bag` scene, Mean IoU: 0.044)**: In eval images **104, 112, 123, 109**, pale eggs lie on crumpled white plastic. Because both egg and background exhibit near-identical high luminance and low saturation, color distance drops to zero. GrabCut segments the high-contrast plastic bag folds instead of the egg boundary.
 2. **False Specular Curvatures (`32, 155`, IoU: 0.000)**: Glossy non-egg regions and bright specular table spots exhibit high circular compactness and center proximity, leading the candidate ranker to prefer them over diffuse, off-center eggs.
 3. **Clustered Multi-Egg Under-Segmentation (`cloth` scene / Dev multi-egg)**: When eggs touch, connected components treat them as a single mass whose eccentricity and solidity fail ellipse thresholds, suppressing secondary eggs.
 
