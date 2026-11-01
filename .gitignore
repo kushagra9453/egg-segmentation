@@ -9,3 +9,4 @@ outputs/sam_final/masks_cvat_backup/
 outputs/sam_final/masks_ellipse_backup/
 yt-dlp
 outputs/tracking_output.mp4
+*.mov
