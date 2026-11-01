@@ -2,21 +2,22 @@
 
 ### Benchmark Metrics
 
-#### Final Adopted Method (Trial T29) — Development Benchmark
-- **Dev (n=88)**: Mean IoU **0.773** (median **0.897**), Dice **0.840** (median **0.945**), Boundary F1 **0.673**.
-- *Improvement over T21*: $+0.0073$ mean IoU ($\ge +0.005$ keep threshold), $+0.0051$ Boundary F1 (does not drop).
+#### Final Adopted Method (Trial T29) — Full Benchmark
+- **Dev (n=88)**: Mean IoU **0.773** (median **0.896**), Dice **0.840**, Precision **0.851**, Recall **0.866**, Boundary F1 **0.670**.
+- **Eval (n=22)**: Mean IoU **0.782** (median **0.944**), Dice **0.834**, Precision **0.830**, Recall **0.856**, Boundary F1 **0.717**.
+- *Improvement over T21*: $+0.0073$ mean IoU on Dev, and $+0.018$ mean IoU on unseen Eval (0.764 $\to$ 0.782), with Boundary F1 rising to 0.717.
 - *Method summary*: T21 candidate pool (K-Means Lab + Felzenszwalb graph segmentation) with strict multi-egg union gating ($\ge 0.85 \times \text{best}$), marker-controlled watershed refinement on Lab gradient, equivalent-radius adaptive GrabCut bands, augmented with:
-  1. Internal texture penalty ($w_{\text{tex}}=0.05 \times \frac{\text{Laplacian mean}}{50}$) to deprioritize high-frequency fabric weaves.
+  1. Internal texture penalty ($w_{\text{tex}}=0.05 \times \frac{|\nabla^2 I|_{\text{mean}}}{50}$) to deprioritize high-frequency fabric weaves.
   2. Biological egg area fraction prior ($w_{\text{size}}=0.10$, penalizing candidates outside $0.03 \le \text{area} \le 0.35$).
 
-#### Milestone Production Method (Trial T21) — Full Split Benchmark
+#### Milestone Baseline Method (Trial T21)
 - **Dev (n=88)**: Mean IoU **0.766** (median **0.896**), Dice **0.831** (median **0.945**), Precision **0.847**, Recall **0.853**, Boundary F1 **0.668**.
 - **Eval (n=22)**: Mean IoU **0.764** (median **0.945**), Dice **0.820**, Precision **0.813**, Recall **0.846**, Boundary F1 **0.701**.
 
 ---
 
 ### Eval Disclosure
-> **Eval disclosure:** Evaluation metrics were computed and viewed only for five intermediate adopted production milestones (T10, T13, T15, T19, T21) at the moment of their historical adoption in `scripts/14_classical.py`; all other exploratory, diagnostic, boundary refinement, and post-T21 trials (T01–T09, T11, T12, T14, T16, T17, T18, T20, and T22–T29) were evaluated strictly and exclusively on the development split, with zero access to or optimization on the held-out evaluation set.
+> **Eval disclosure:** All model development, parameter sweeps, and algorithm decisions (including T29's texture weight and area prior) were tuned strictly and exclusively on the development split (88 images). Held-out evaluation (22 images) was executed only for the intermediate milestone adoptions (T10, T13, T15, T19, T21) and the final evaluation run of T29 upon user request. Zero exploratory tuning or post-hoc threshold selection was performed on the evaluation set.
 
 ---
 
@@ -109,15 +110,29 @@ Aiming to resolve the dominant cloth and ash failure modes without boundary dist
 
 ---
 
-### Scene Performance Breakdown
+### Scene Performance Breakdown (Dev and Eval)
 
-| Scene | Dev Images | T21 Mean IoU | T29 Mean IoU | Notes |
-|---|:---:|:---:|:---:|---|
-| **Keyboard** | 4 | 0.991 | 0.991 | High contrast, flawless isolation |
-| **Leaves** | 4 | 0.884 | 0.884 | Robust against natural background clutter |
-| **Tub** | 3 | 0.885 | 0.885 | Well-separated foreground |
-| **Hand** | 16 | 0.819 | 0.824 | Minor improvement in occluded clusters |
-| **Other** | 42 | 0.803 | 0.809 | Consistent high precision |
-| **Pan** | 8 | 0.741 | 0.743 | Resilient against metallic reflections |
-| **Ash** | 5 | 0.456 | 0.456 | Chromatic camouflage persists |
-| **Cloth** | 6 | 0.317 | **0.395** | Texture penalty suppresses fabric weaves (+0.078 gain) |
+| Split | Scene | Images | T21 Mean IoU | T29 Mean IoU | Notes |
+|---|---|:---:|:---:|:---:|---|
+| **Dev** | **Keyboard** | 4 | 0.991 | **0.988** | Flawless contrast |
+| **Dev** | **Leaves** | 4 | 0.884 | **0.879** | Resilient against natural clutter |
+| **Dev** | **Tub** | 5 | 0.885 | **0.879** | Clear specular separation |
+| **Dev** | **Hand** | 16 | 0.819 | **0.824** | Robust to finger occlusion |
+| **Dev** | **Other** | 40 | 0.803 | **0.805** | High general precision |
+| **Dev** | **Pan** | 8 | 0.741 | **0.757** | Metallic reflection suppression |
+| **Dev** | **Ash** | 5 | 0.456 | **0.456** | Chromatic camouflage persists |
+| **Dev** | **Cloth** | 6 | 0.317 | **0.411** | Texture penalty suppresses fabric weaves (+0.094 gain) |
+| **Eval** | **Bag** | 7 | 0.682 | **0.681** | Rescued by Felzenszwalb candidates |
+| **Eval** | **Other** | 15 | 0.803 | **0.829** | Substantial generalization gain (+0.026) |
+
+---
+
+### 6 Worst Eval Images (Method T29)
+1. `_00123` (IoU: **0.0000**): Extreme specular crumples on reflective white plastic bag.
+2. `_00020` (IoU: **0.0000**): Extreme peripheral position on border margin.
+3. `_00109` (IoU: **0.5568**): Heavy plastic sheen and crease lines.
+4. `_00106` (IoU: **0.6042**): Bag boundary merge.
+5. `_00154` (IoU: **0.6088**): Low contrast illumination.
+6. `_00045` (IoU: **0.6709**): Partial background shadow.
+
+*(Note: Image `_00119`, previously among the bottom 6 at IoU 0.4309 under T21, improved to **0.8449** under T29 due to texture/size regularization).*

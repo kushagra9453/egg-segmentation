@@ -86,13 +86,14 @@ python scripts/15_track.py
 ### Classical Segmentation Benchmark
 | Model / Trial | Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **T29 (Final Classical)** | **Dev** | 88 | **0.773** | **0.897** | **0.840** | 0.854 | 0.858 | **0.673** |
+| **T29 (Final Classical)** | **Dev** | 88 | **0.773** | **0.896** | **0.840** | 0.851 | 0.866 | **0.670** |
+| **T29 (Final Classical)** | **Eval** | 22 | **0.782** | **0.944** | **0.834** | 0.830 | 0.856 | **0.717** |
 | **T21 (Milestone Baseline)** | **Dev** | 88 | **0.766** | **0.896** | **0.831** | 0.847 | 0.853 | **0.668** |
 | **T21 (Milestone Baseline)** | **Eval** | 22 | **0.764** | **0.945** | **0.820** | 0.813 | 0.846 | **0.701** |
 
-*Eval Disclosure: Evaluation metrics were strictly computed and viewed only for five intermediate adopted production milestones (T10, T13, T15, T19, T21) at the moment of their historical selection in `scripts/14_classical.py`; all other trials (T01–T09, T11, T12, T14, T16, T17, T18, T20, and post-T21 trials T22–T29) were evaluated strictly and exclusively on the development split.*
+*Eval Disclosure: Model exploration, candidate scoring weights, boundary refinement methods, and hyperparameter sweeps were tuned strictly on the development split (88 images). Held-out evaluation metrics were computed only for the adopted milestones (T10, T13, T15, T19, T21) and the final evaluated model (T29); all other exploratory trials were restricted strictly to the development split.*
 
-*Note: T29 incorporates candidate internal texture penalty (Laplacian mean / 50) and egg-size area priors ($0.03 \le \text{area} \le 0.35$), providing a $+0.0073$ mean IoU gain over T21 on Dev while increasing Boundary F1 to 0.673.*
+*Note: T29 incorporates candidate internal texture penalty (Laplacian mean / 50) and egg-size area priors ($0.03 \le \text{area} \le 0.35$), providing a $+0.0073$ mean IoU gain over T21 on Dev while increasing Eval Mean IoU to 0.782 (+0.018 gain) and Boundary F1 to 0.717.*
 
 ### Video Tracking Performance
 * **Total Frames Processed**: 3,409 frames @ 31.79 fps.

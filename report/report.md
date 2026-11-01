@@ -50,7 +50,7 @@ The dataset consists of 110 images captured across repeated visual environments 
 ### 2.2 Classical Experiment Log (Trials T01–T29)
 All experiments were evaluated strictly on the development split (88 images) and logged to `experiment_log.csv`. A trial was adopted as a milestone only if mean Dev IoU improved by $>0.005$ and Boundary F1 did not drop. 
 
-> **Eval Disclosure:** Evaluation metrics were strictly computed and viewed only for five intermediate adopted production milestones (**T10**, **T13**, **T15**, **T19**, **T21**) at the moment of their historical adoption in `scripts/14_classical.py`; all other exploratory, diagnostic, boundary refinement, and final trials (**T01–T09**, **T11**, **T12**, **T14**, **T16**, **T17**, **T18**, **T20**, and **T22–T29**) were evaluated strictly and exclusively on the development split, with zero access to or optimization on the held-out evaluation set.
+> **Eval Disclosure:** Model exploration, candidate scoring weights, boundary refinement methods, and hyperparameter sweeps were tuned strictly and exclusively on the development split (88 images). Held-out evaluation metrics were computed and viewed only for the five intermediate adopted milestones (**T10**, **T13**, **T15**, **T19**, **T21**) and the final adopted method (**T29**); all other exploratory and discarded trials (**T01–T09**, **T11**, **T12**, **T14**, **T16–T18**, **T20**, and **T22–T28**) were evaluated strictly on the development split, with zero access to or tuning on the held-out evaluation set.
 
 The table below catalogs every trial conducted throughout the optimization campaign (mapping Step 2 failure fixes to **T22–T23**, Step 3 boundary refinements 3a–3d to **T24–T28**, and Step 4 candidate scoring prior to **T29**):
 
@@ -95,11 +95,12 @@ The benchmark metrics across development and held-out evaluation sets are summar
 
 | Model / Trial | Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **T29 (Final Classical)** | **Development** | 88 | **0.773** | **0.897** | **0.840** | 0.854 | 0.858 | **0.673** |
+| **T29 (Final Classical)** | **Development** | 88 | **0.773** | **0.896** | **0.840** | 0.851 | 0.866 | **0.670** |
+| **T29 (Final Classical)** | **Evaluation** | 22 | **0.782** | **0.944** | **0.834** | 0.830 | 0.856 | **0.717** |
 | **T21 (Milestone Baseline)** | **Development** | 88 | **0.766** | **0.896** | **0.831** | 0.847 | 0.853 | **0.668** |
 | **T21 (Milestone Baseline)** | **Evaluation** | 22 | **0.764** | **0.945** | **0.820** | 0.813 | 0.846 | **0.701** |
 
-*Note: Boundary F-score is computed at a 2-pixel tolerance at the $320\text{ px}$ working scale. In accordance with strict leakage-prevention protocols, T29 was tuned and verified strictly on the development split (no eval computation was performed). T21 tightens the multi-egg union threshold to 0.85 (up from 0.75 in T10–T19) after tracing zero-IoU dev images (such as ID 108, whose correct candidate was previously swamped by a false second egg). This change proved highly robust on unseen evaluation data, yielding 0.764 mean IoU and 0.945 median IoU.*
+*Note: Boundary F-score is computed at a 2-pixel tolerance at the $320\text{ px}$ working scale. In accordance with strict leakage-prevention protocols, T29 was tuned strictly on the development split (88 images). Evaluating T29 on the held-out evaluation set demonstrates strong generalizability: Mean IoU increased from 0.764 to **0.782** (+0.018 gain), Precision rose to 0.830, Recall to 0.856, and Boundary F1 reached **0.717**.*
 
 ### 3.2 Evaluation Visualizations
 * **IoU Distribution Histogram (`outputs/results/iou_hist.png`)**: Confirms an overwhelming concentration of evaluation images at the high end, with median IoU reaching **0.945**.
