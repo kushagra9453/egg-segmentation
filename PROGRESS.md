@@ -9,3 +9,4 @@
 - [x] STEP 7: T13 added (marker-controlled watershed on Lab gradient) – KEPT (Dev IoU 0.681); T14 logged
 - [x] STEP 8: T15 added (egg-radius scaled GrabCut bands) – KEPT (Dev IoU 0.707); T16-T18 logged; results & docs updated
 - [x] STEP 9: T19 applied (Felzenszwalb candidates) – KEPT (Dev IoU 0.729, Eval 0.711); T20 logged; results & docs updated
+- [x] STEP 10: T21 applied (tightened multi-egg union 0.85) – KEPT (Dev IoU 0.766, Eval 0.764); results & docs updated

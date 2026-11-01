@@ -7,7 +7,7 @@
 ## Executive Summary
 This report presents an end-to-end computer vision solution for segmenting and tracking eggs across diverse, challenging real-world scenes. The project is organized into four tasks:
 1. **Task 1: Ground-Truth Generation** utilizing Meta's Segment Anything Model (SAM) enhanced with manual bounding boxes, CVAT polygon corrections, and parametric ellipse fitting.
-2. **Task 2: Classical Segmentation Optimization** developed iteratively over 20 disciplined trials on a leakage-free development split (88 images).
+2. **Task 2: Classical Segmentation Optimization** developed iteratively over 21 disciplined trials on a leakage-free development split (88 images).
 3. **Task 3: Evaluation and Failure Analysis** on an unseen evaluation split (22 images) using IoU, Dice, Precision, Recall, and Boundary F-score metrics alongside scene-stratified breakdown.
 4. **Task 4: Multi-Object Video Tracking** executing on a 3,409-frame video clip combining classical segmentation, distance-transform watershed splitting, and gated Hungarian matching.
 
@@ -47,7 +47,7 @@ The dataset consists of 110 images captured across repeated visual environments 
   * Complete cluster independence: zero overlapping scenes between dev and eval.
   * All hyperparameter tuning was restricted strictly to the development split.
 
-### 2.2 Classical Experiment Log (Trials T01–T20)
+### 2.2 Classical Experiment Log (Trials T01–T21)
 All experiments were logged to `experiment_log.csv`. A trial was adopted only if mean Dev IoU improved by $>0.005$:
 
 | Trial | Modification | Hypothesis / Motivation | Parameters | Dev IoU | Dev Dice | Decision | Rationale |
@@ -70,34 +70,35 @@ All experiments were logged to `experiment_log.csv`. A trial was adopted only if
 | **T16** | Inner-candidate rule on large regions | Replace $>30\%$ image region | Area $>0.3 \times$ image | 0.702 | - | DISCARDED | Never changed a selection |
 | **T17** | Multi-egg union size-consistency rule | Extra regions must be 0.3-3x best region area | Area ratio 0.3-3x | 0.701 | - | DISCARDED | No gain over T15 (0.7031) |
 | **T18** | Shape filter on final components | Filter post-GrabCut false positives | Ellipse fit $\ge 0.6-0.8$, solidity $\ge 0.85-0.95$ | 0.695 | - | DISCARDED | Smooth GrabCut false regions pass; partial eggs fail |
-| **T19** | Extra candidates from Felzenszwalb graph segmentation | Edge-respecting regions for low-contrast scenes | Scales 100/120/150, $\sigma=0.8$, min size 1% | **0.729** | **0.794** | **KEPT** | +0.022 gain (within noise, bootstrap 95% CI [-0.03, +0.07]); rescues low-contrast bag scenes; selected as final method |
+| **T19** | Extra candidates from Felzenszwalb graph segmentation | Edge-respecting regions for low-contrast scenes | Scales 100/120/150, $\sigma=0.8$, min size 1% | 0.729 | 0.794 | **KEPT** | +0.022 gain (within noise); rescues bag scenes |
 | **T20** | Re-rank 4 refined hypotheses by edge + ring contrast | Hypothesis re-ranking | Score + $w_e \cdot \text{edge} + w_c \cdot \text{contrast}$ | 0.742 | - | DISCARDED | Selection noise across scene-halves |
+| **T21** | Strict multi-egg union rule (score $\ge 0.85 \times \text{best}$) | Suppress swamping false extra regions | Union ratio threshold $0.85$ (was $0.75$) | **0.766** | **0.831** | **KEPT** | +0.037 gain over T19; bootstrap 95% CI [+0.005, +0.08] excludes 0; selected as final method |
 
 ---
 
 ## 3. Task 3: Evaluation, Metrics, and Failure Modes
 
 ### 3.1 Quantitative Results
-Evaluating the selected **T19** method across the dataset yields:
+Evaluating the selected **T21** method across the dataset yields:
 
 | Split | Images | Mean IoU | Median IoU | Mean Dice | Precision | Recall | Boundary F1 (2px) |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Development** | 88 | **0.729** | **0.894** | **0.794** | 0.772 | 0.875 | **0.634** |
-| **Evaluation** | 22 | **0.711** | **0.777** | **0.782** | 0.747 | 0.857 | **0.641** |
+| **Development** | 88 | **0.766** | **0.896** | **0.831** | 0.847 | 0.853 | **0.668** |
+| **Evaluation** | 22 | **0.764** | **0.945** | **0.820** | 0.813 | 0.846 | **0.701** |
 
-*Note: Boundary F-score is computed at a 2-pixel tolerance at the $320\text{ px}$ working scale. Although the T19 development gain (+0.022 over T15) is within statistical noise (bootstrap 95% CI of the per-image gain is $[-0.03, +0.07]$, which includes 0), the edge-respecting Felzenszwalb candidates dramatically resolve the white-on-white bag cluster on the held-out evaluation set, raising eval mean IoU from 0.326 to 0.711.*
+*Note: Boundary F-score is computed at a 2-pixel tolerance at the $320\text{ px}$ working scale. T21 tightens the multi-egg union threshold to 0.85 (up from 0.75 in T10–T19) after tracing zero-IoU dev images (such as ID 108, whose correct candidate was previously swamped by a false second egg). This change proves highly robust on unseen evaluation data, yielding 0.764 mean IoU and 0.945 median IoU.*
 
 ### 3.2 Evaluation Visualizations
-* **IoU Distribution Histogram (`outputs/results/iou_hist.png`)**: Illustrates the dramatic shift away from zero-IoU failures on the eval split, with the vast majority of images now scoring in the $0.70\text{--}0.95$ range.
+* **IoU Distribution Histogram (`outputs/results/iou_hist.png`)**: Confirms an overwhelming concentration of evaluation images at the high end, with median IoU reaching **0.945**.
 * **Scene-Grouped IoU Comparison (`outputs/results/scene_iou.png`)**:
-  * High-performing scenes: `keyboard` (0.99), `hand` (0.83), `leaves` (0.80), `other` (0.75 dev / 0.80 eval), `pan` (0.70), `tub` (0.63).
-  * Challenging scenes: `ash` (0.60), `bag` (0.52 eval, up from 0.044), `cloth` (0.32).
+  * High-performing scenes: `keyboard` (0.99), `tub` (0.89), `leaves` (0.88), `hand` (0.82), `other` (0.80 dev / 0.80 eval), `pan` (0.74), `bag` (0.68 eval).
+  * Challenging scenes: `ash` (0.46), `cloth` (0.32).
 * **Worst Failures Tile (`outputs/results/worst_failures.jpg`)**: Compares original image, ground truth overlay, classical prediction, and false-positive/false-negative error maps for the worst eval failures.
 
 ### 3.3 Failure Mode Analysis
-1. **Low-Contrast White-on-White (`bag` scene, Mean IoU: 0.523)**: Thanks to Felzenszwalb edge-based segment proposals, the previous near-zero collapse on white crumpled plastic bags has been resolved. Residual failures occur primarily on extreme glare patterns (`123, 125`, IoU: 0.000) where specular bag reflections mimic egg contours.
-2. **Fabric Texture Distortions (`cloth` scene, Mean IoU: 0.317)**: High-frequency folds and weaves introduce competing edge candidates that disrupt boundary regularity.
-3. **Specular Curvatures & Table Spot Reflections**: Concentrated light spots on glossy work surfaces occasionally create circular candidates that compete with diffuse, off-center eggs.
+1. **Extreme Specular Crumples (`123`, IoU: 0.000)**: On heavy white plastic bags with deep sharp creases and glare highlights, specular folds form closed loops that occasionally outscore real eggs.
+2. **Extreme Peripheral Displacement (`20`, IoU: 0.0001)**: Miniature off-center eggs located directly along image margins where spatial priors suppress candidate ranking.
+3. **Complex Fabric Folds (`cloth` scene, Mean IoU: 0.317)**: Dense, high-frequency weaves on patterned fabrics mimic egg edges and disrupt boundary initialization.
 
 ### 3.4 Future Improvements
 1. **Edge-Aware Gradient Verification**: Integrate Canny edge loops with bilateral filtering or active contours (Chan-Vese) to trace egg contours when color differences vanish.

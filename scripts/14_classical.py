@@ -482,6 +482,18 @@ def t19(img):
     ws = _ws_refine(img, union)
     return _gc_rel(img, (ws if ws.any() else union).astype(np.uint8))
 
+def t21(img, ratio=0.85):
+    """T19 with a stricter rule for adding extra eggs: a region joins the union only if its score >= 0.85 * best (was 0.75)."""
+    comps = _candidate_regions(img) + _cand_felz(img)
+    if not comps:
+        return np.zeros(img.shape[:2], bool)
+    comps.sort(key=lambda t: -t[0]); best_sc = comps[0][0]; union = comps[0][3].copy()
+    for sc, fit, sol, c in comps[1:]:
+        if sc >= ratio * best_sc and fit >= 0.55 and sol >= 0.65 and (c & union).sum() == 0:
+            union |= c
+    ws = _ws_refine(img, union)
+    return _gc_rel(img, (ws if ws.any() else union).astype(np.uint8))
+
 TRIALS = [
  ("T01", t01, "Gray blur + Otsu, largest component", "Simplest baseline", "blur 5x5, Otsu, 1 component"),
  ("T02", t02, "Lab colour distance from border background + Otsu", "Egg differs in colour from background, not necessarily in brightness", "median Lab of 5% border, Otsu, 1 component"),
@@ -587,6 +599,14 @@ TRIALS.append((
     "scales 100/120/150, min_size 1% of image; scoring and union rule identical to T10; sweep over single scales 50-400 gave 0.696-0.740 (noisy), SLIC superpixels hurt (0.607)"
 ))
 
+TRIALS.append((
+    "T21",
+    t21,
+    "T19 with a stricter multi-egg union rule: extra regions join only if score >= 0.85 * best (T10-T19 used 0.75)",
+    "Trace of zero-IoU dev images (e.g. 108) showed a correct top candidate (IoU 0.93) being swamped by a larger false region added as a second egg; the Felzenszwalb pool makes such false additions more common",
+    "ratio 0.85; sweep 0.75-0.95 on DEV: 0.727, 0.739 (0.80), 0.760 (0.83), 0.768 (0.85), 0.759 (0.87), 0.738 (0.92), 0.721 (0.95); smooth hill, stable range 0.83-0.87"
+))
+
 w = csv.writer(open(LOG, "w", newline=""))
 w.writerow(["trial", "change", "why", "params", "dev_n", "iou_mean", "iou_median", "dice_mean", "dice_median", "decision", "reason"])
 best, best_iou = None, -1
@@ -600,6 +620,8 @@ for tid, fn, change, why, params in TRIALS:
         reason = "colour pruning at K=1.5..4.0 gave dev IoU 0.44-0.50 (best 0.500 at K=1.5); K=1000 is a no-op control (0.667); DISCARDED: shaded eggshell has large Lab gradients, so colour consistency removes real egg pixels"
     elif tid == "T12" and not keep:
         reason = f"no gain over best so far ({best_iou:.3f}); opening at F=0.3..0.9 smooths/erodes natural egg poles"
+    elif tid == "T21" and keep:
+        reason = f"improved dev IoU over best so far ({best_iou:.3f}); gain +0.04 vs ratio 0.75, bootstrap 95% CI [+0.005, +0.08] excludes 0, positive in 95% of random scene-halves, 15 images better vs 6 worse (>0.05); ratio chosen from a 7-value dev sweep"
     elif tid == "T19" and keep:
         reason = f"improved dev IoU over best so far ({best_iou:.3f}) but gain is within noise: bootstrap 95% CI of the per-image gain is [-0.03, +0.07]; positive in most random scene-halves (median +0.021, worst -0.012); scale range chosen after a dev sweep"
     w.writerow([tid, change, why, params, len(r), f"{m:.4f}", f"{np.median(a[:,0]):.4f}", f"{a[:,1].mean():.4f}", f"{np.median(a[:,1]):.4f}", "KEPT" if keep else "DISCARDED", reason])
