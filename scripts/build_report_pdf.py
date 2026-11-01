@@ -91,6 +91,8 @@ def markdown_to_html(md_text, base_dir):
             out.append('<hr/>')
         elif s == '':
             out.append('')
+        elif s.startswith('<div') or s.startswith('</div') or s.startswith('<p') or s.startswith('</p'):
+            out.append(s)
         elif not s.startswith('<div class="fig-box">'):
             out.append(f'<p>{s}</p>')
         else:

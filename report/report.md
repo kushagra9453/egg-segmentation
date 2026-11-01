@@ -147,8 +147,12 @@ Benchmark metrics across the development and held-out evaluation sets using fina
 #### Worst-Failure Visuals (Evaluation Split)
 The 6 worst failure cases on the evaluation split under method T29 are displayed below:
 
+<div style="page-break-inside: avoid;">
+
 ![Worst Failures on Evaluation Split](../outputs/results/worst_failures.jpg)
 *Figure 4: Tile of 6 worst eval failures under Method T29. Columns: (1) Input image with ID label, (2) Ground truth mask overlay (green), (3) Classical T29 prediction (yellow), (4) Error map with False Positives in Red and False Negatives in Blue.*
+
+</div>
 
 **Detailed Row-by-Row Analysis of Figure 4 Failures:**
 * **Row 1: Image ID 123 (Eval IoU: 0.0000)**: The egg sits on a white plastic shopping bag. The classical prediction selected the prominent **blue printed text strip** on the packaging instead of the egg shell, yielding zero foreground intersection.
