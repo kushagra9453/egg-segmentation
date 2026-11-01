@@ -125,14 +125,14 @@ def main():
     css = """
     @page {
         size: A4;
-        margin: 18mm 16mm 18mm 16mm;
+        margin: 15mm 13mm 15mm 13mm;
         @bottom-right {
             content: counter(page);
         }
     }
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-size: 9.5pt;
+        font-size: 9pt;
         line-height: 1.45;
         color: #24292e;
         background-color: #ffffff;
@@ -140,7 +140,7 @@ def main():
         padding: 0;
     }
     h1 {
-        font-size: 18pt;
+        font-size: 17pt;
         font-weight: 700;
         color: #1a202c;
         border-bottom: 2px solid #eaecef;
@@ -159,7 +159,7 @@ def main():
         page-break-after: avoid;
     }
     h3 {
-        font-size: 11pt;
+        font-size: 10.5pt;
         font-weight: 600;
         color: #4a5568;
         margin-top: 14px;
@@ -167,7 +167,7 @@ def main():
         page-break-after: avoid;
     }
     h4 {
-        font-size: 10pt;
+        font-size: 9.5pt;
         font-weight: 600;
         color: #4a5568;
         margin-top: 10px;
@@ -192,14 +192,14 @@ def main():
         background-color: #f7fafc;
         border-left: 4px solid #3182ce;
         color: #2d3748;
-        font-size: 9pt;
+        font-size: 8.5pt;
         border-radius: 2px;
     }
     code {
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-        font-size: 8.5pt;
+        font-size: 8pt;
         background-color: #f0f3f6;
-        padding: 2px 4px;
+        padding: 1px 3px;
         border-radius: 3px;
     }
     a {
@@ -215,8 +215,8 @@ def main():
     table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 7.8pt;
-        margin: 10px 0 14px 0;
+        font-size: 7.2pt;
+        margin: 8px 0 12px 0;
         page-break-inside: auto;
     }
     tr {
@@ -229,19 +229,20 @@ def main():
         font-weight: 600;
         text-align: left;
         border: 1px solid #cbd5e1;
-        padding: 4px 6px;
+        padding: 3px 4px;
     }
     td {
         border: 1px solid #e2e8f0;
-        padding: 4px 6px;
+        padding: 3px 4px;
         vertical-align: top;
+        word-break: break-word;
     }
     tr:nth-child(even) td {
         background-color: #f8fafc;
     }
     .fig-box {
         text-align: center;
-        margin: 12px 0;
+        margin: 10px 0;
         page-break-inside: avoid;
     }
     .fig-box img {
@@ -251,10 +252,16 @@ def main():
         border: 1px solid #e2e8f0;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
+    td .fig-box {
+        margin: 2px 0;
+    }
+    td .fig-box img {
+        max-width: 100%;
+    }
     .fig-caption {
         font-size: 8pt;
         color: #718096;
-        margin-top: 4px;
+        margin-top: 3px;
         font-style: italic;
     }
     """
@@ -263,7 +270,7 @@ def main():
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Computer Vision Intern Task Report - Krishna</title>
+<title>Computer Vision Engineer Task Report - Krishna</title>
 <style>
 {css}
 </style>
